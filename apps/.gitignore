@@ -1,0 +1,24 @@
+# Node
+node_modules
+.pnpm-store
+dist
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Vite
+vite.config.*.timestamp-*
+
+# Go
+bin
+*.exe
+*.out
+*.test
+*.prof
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
