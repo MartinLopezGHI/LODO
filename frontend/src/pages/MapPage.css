@@ -1,0 +1,16 @@
+.map-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; /* importante */
+}
+
+.map-logo {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  width: 120px;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1000;
+}
