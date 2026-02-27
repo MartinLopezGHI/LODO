@@ -1,18 +1,13 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-// Get auth token from localStorage (set by AuthContext)
 const getAuthToken = () => localStorage.getItem('auth_token');
-
-// Fallback to env token for backward compatibility
 const ADMIN_TOKEN = import.meta.env.VITE_ADMIN_TOKEN;
 
-/**
- * Generic fetch wrapper with AbortController support
- */
 async function fetchWithSignal(url, options = {}) {
     const response = await fetch(url, options);
     const contentType = response.headers.get('content-type') || '';
     const text = await response.text();
+    
     if (!response.ok) {
         const message = text || `HTTP error! status: ${response.status}`;
         const error = new Error(message);
@@ -20,6 +15,7 @@ async function fetchWithSignal(url, options = {}) {
         error.body = text;
         throw error;
     }
+    
     if (response.status === 204) return null;
     if (!text) return null;
     if (contentType.includes('application/json')) {
@@ -29,19 +25,37 @@ async function fetchWithSignal(url, options = {}) {
 }
 
 /**
- * Helper to clean empty parameters
+ * MEJORA: cleanParams ahora mapea nombres de filtros viejos a los nuevos del backend
+ * para evitar el error 400.
  */
 function cleanParams(params) {
     const cleaned = {};
+    // Mapa de traducción: Front-End Viejo -> Back-End Nuevo
+    const translationMap = {
+        'sectorPrimary': 'vertical',
+        'stage': 'estadioActual'
+    };
+
     Object.keys(params).forEach(key => {
-        if (params[key] !== '' && params[key] !== null && params[key] !== undefined) {
-            cleaned[key] = params[key];
+        let value = params[key];
+        
+        if (value !== '' && value !== null && value !== undefined) {
+            // Si la llave está en el mapa, usamos la nueva, sino la original
+            const finalKey = translationMap[key] || key;
+            cleaned[finalKey] = value;
         }
     });
     return new URLSearchParams(cleaned).toString();
 }
 
-// Public Endpoints
+const getAuthHeader = () => {
+    const userToken = getAuthToken();
+    const token = userToken || ADMIN_TOKEN;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// --- ENDPOINTS PÚBLICOS ---
+
 export const fetchOrganizations = async (params = {}, signal) => {
     const query = cleanParams(params);
     return fetchWithSignal(`${API_URL}/public/organizations?${query}`, { signal });
@@ -60,21 +74,17 @@ export const fetchTaxonomies = async (signal) => {
     return fetchWithSignal(`${API_URL}/public/taxonomies`, { signal });
 };
 
-// Helper to get authorization header (prefers user token, falls back to env token)
-const getAuthHeader = () => {
-    const userToken = getAuthToken();
-    const token = userToken || ADMIN_TOKEN;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-};
+// --- ENDPOINTS ADMINISTRATIVOS ---
 
-// Admin Endpoints
-export const adminFetchOrganizations = async () => {
-    return fetchWithSignal(`${API_URL}/organizations`, {
+export const adminFetchOrganizations = async (params = {}) => {
+    const query = cleanParams(params);
+    return fetchWithSignal(`${API_URL}/organizations?${query}`, {
         headers: getAuthHeader()
     });
 };
 
 export const adminCreateOrganization = async (data) => {
+    const { id, ...payload } = data; // Extraemos el id para no enviarlo en el POST
     return fetchWithSignal(`${API_URL}/organizations`, {
         method: 'POST',
         headers: {
@@ -103,13 +113,6 @@ export const adminDeleteOrganization = async (id, force = false) => {
     });
 };
 
-export const adminGeocodeOrganization = async (id) => {
-    return fetchWithSignal(`${API_URL}/organizations/${id}/geocode`, {
-        method: 'POST',
-        headers: getAuthHeader()
-    });
-};
-
 export const adminSubmitForReview = async (id) => {
     return fetchWithSignal(`${API_URL}/organizations/${id}/review`, {
         method: 'POST',
@@ -128,5 +131,23 @@ export const adminArchiveOrganization = async (id) => {
     return fetchWithSignal(`${API_URL}/organizations/${id}/archive`, {
         method: 'POST',
         headers: getAuthHeader()
+    });
+};
+
+export const adminGeocodeOrganization = async (id) => {
+    return fetchWithSignal(`${API_URL}/organizations/${id}/geocode`, {
+        method: 'POST',
+        headers: getAuthHeader()
+    });
+};
+
+export const adminPatchCoordinates = async (id, coords) => {
+    return fetchWithSignal(`${API_URL}/organizations/${id}/coordinates`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+        },
+        body: JSON.stringify(coords)
     });
 };

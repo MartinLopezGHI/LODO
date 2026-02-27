@@ -245,14 +245,13 @@ function ResizeMap() {
         const observer = new ResizeObserver(() => {
             if (requestRef.current) return;
             requestRef.current = requestAnimationFrame(() => {
-                map.invalidateSize({ animate: false }); // animate: false is smoother for continuous resizing
+                map.invalidateSize({ animate: false }); 
                 requestRef.current = null;
             });
         });
 
         observer.observe(container);
 
-        // Initial sync
         map.invalidateSize();
 
         return () => {
@@ -265,7 +264,6 @@ function ResizeMap() {
 }
 
 export default function MapView({ organizations, onBboxChange, onMarkerClick, centeredLocation }) {
-    // Center of South America approx
     const defaultPosition = [10, -20];
     const defaultZoom = 3;
     const [worldGeo, setWorldGeo] = useState(null);
@@ -362,7 +360,6 @@ export default function MapView({ organizations, onBboxChange, onMarkerClick, ce
         });
     };
 
-    // Memoize markers to prevent unnecessary re-renders
     const markers = useMemo(() => {
         return organizations.map(org => {
             if (!org.lat || !org.lng) return null;
@@ -388,7 +385,8 @@ export default function MapView({ organizations, onBboxChange, onMarkerClick, ce
                             </p>
                             <div className="mt-2 flex flex-wrap gap-1">
                                 <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-secondary-foreground">
-                                    {org.sectorPrimary}
+                                    {/* ALINEACIÓN: Usamos vertical en lugar de sectorPrimary */}
+                                    {org.vertical}
                                 </span>
                             </div>
                             <p className="text-[10px] font-medium text-primary mt-2 flex items-center justify-end uppercase tracking-wider">
@@ -413,15 +411,15 @@ export default function MapView({ organizations, onBboxChange, onMarkerClick, ce
                 scrollWheelZoom={true}
                 className="w-full h-full z-0"
                 zoomControl={false}
-                preferCanvas={true} // Improves performance for many markers
+                preferCanvas={true} 
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    attribution='&copy; CARTO'
                     url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
                     noWrap={true}
                 />
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    attribution='&copy; CARTO'
                     url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png"
                     minZoom={6}
                     noWrap={true}

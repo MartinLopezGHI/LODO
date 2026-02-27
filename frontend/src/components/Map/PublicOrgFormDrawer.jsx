@@ -1,34 +1,38 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Globe, MapPin, X } from 'lucide-react';
+import { Mail, Globe, MapPin, Send, User } from 'lucide-react';
+import { fetchTaxonomies } from '../../services/api';
 
 export default function PublicOrgFormDrawer({ isOpen, onClose, onSubmitted }) {
     const [loading, setLoading] = useState(false);
+    const [taxonomies, setTaxonomies] = useState({});
+    
+    // Estado inicial alineado a la estructura del nuevo Backend
     const [form, setForm] = useState({
         firstName: '',
         lastName: '',
-        companyName: '',
-        location: '',
-        address: '',
+        name: '',        // Antes companyName
+        vertical: '',    // Antes companyType
+        country: '',
+        region: '',
+        city: '',
+        solucion: '',    // Antes description
         website: '',
-        companyType: '',
-        otherType: '',
-        email: '',
+        mail: '',        // Antes email
         phone: ''
     });
 
-    const companyOptions = [
-        { value: 'AGTECH', label: 'AGTECH' },
-        { value: 'FOODTECH', label: 'FOODTECH' },
-        { value: 'CLIMATECH', label: 'CLIMATECH' },
-        { value: 'CIRCULAR_ECONOMY', label: 'CIRCULAR ECONOMY' },
-        { value: 'OTHER', label: 'OTRO' }
-    ];
+    // Cargamos las categorías para que el usuario elija una válida del sistema
+    useEffect(() => {
+        if (isOpen) {
+            fetchTaxonomies().then(setTaxonomies).catch(() => console.error("Error al cargar categorías"));
+        }
+    }, [isOpen]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -36,28 +40,38 @@ export default function PublicOrgFormDrawer({ isOpen, onClose, onSubmitted }) {
     };
 
     const handleSelect = (val) => {
-        setForm(prev => ({ ...prev, companyType: val }));
+        setForm(prev => ({ ...prev, vertical: val }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         setLoading(true);
 
-        const type = form.companyType === 'OTHER' ? form.otherType : form.companyType;
+        // Preparamos el cuerpo del correo con el nuevo estándar
+        const body = `SOLICITUD DE ALTA - ECOSISTEMA LODO\n
+--------------------------------------
+DATOS DEL CONTACTO:
+Nombre: ${form.firstName} ${form.lastName}
+Email: ${form.mail}
+Teléfono: ${form.phone}
 
-        const body = `Nombre: ${form.firstName} ${form.lastName}\nEmpresa: ${form.companyName}\nTipo: ${type}\nUbicación: ${form.location}\nDirección: ${form.address}\nWebsite: ${form.website}\nEmail: ${form.email}\nTeléfono: ${form.phone}`;
+DATOS DE LA EMPRESA:
+Nombre: ${form.name}
+Vertical: ${form.vertical}
+Solución: ${form.solucion}
+Ubicación: ${form.city}, ${form.region}, ${form.country}
+Website: ${form.website}
+--------------------------------------`;
 
-        const mailto = `mailto:emilianor92@gmail.com?subject=${encodeURIComponent('Nuevo envío - Agregar Empresa LODO')}&body=${encodeURIComponent(body)}`;
+        const mailto = `mailto:emilianor92@gmail.com?subject=${encodeURIComponent('Nueva Postulación - Startup LODO')}&body=${encodeURIComponent(body)}`;
 
-        // Try to open mail client
         try {
             window.location.href = mailto;
-            toast.success('Se abrió el cliente de correo para enviar la solicitud');
+            toast.success('Se abrió tu cliente de correo. Envía el mensaje para completar la postulación.');
             if (onSubmitted) onSubmitted();
             onClose();
         } catch (err) {
-            console.error(err);
-            toast.error('No se pudo abrir el cliente de correo. Copiando contenido al portapapeles.');
+            toast.error('No se pudo abrir el correo. Copiando datos...');
             navigator.clipboard?.writeText(body);
         } finally {
             setLoading(false);
@@ -66,85 +80,98 @@ export default function PublicOrgFormDrawer({ isOpen, onClose, onSubmitted }) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md max-h-[80vh] p-6 overflow-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-center">Agregar Empresa</DialogTitle>
+            <DialogContent className="sm:max-w-md max-h-[90vh] p-0 overflow-hidden border-none shadow-2xl">
+                <DialogHeader className="p-6 bg-muted/20 border-b">
+                    <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-2">
+                        <Send className="h-6 w-6 text-primary" />
+                        AGREGAR EMPRESA
+                    </DialogTitle>
+                    <DialogDescription>
+                        Envíanos tus datos para validar tu proyecto.
+                    </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <Label className="flex items-center gap-2">Nombre</Label>
-                            <Input name="firstName" value={form.firstName} onChange={handleChange} required className="h-11" />
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+                    {/* Persona de Contacto */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase opacity-60">Nombre</Label>
+                            <Input name="firstName" value={form.firstName} onChange={handleChange} required className="h-10" />
                         </div>
-                        <div>
-                            <Label className="flex items-center gap-2">Apellido</Label>
-                            <Input name="lastName" value={form.lastName} onChange={handleChange} required className="h-11" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <Label>Nombre de la Empresa</Label>
-                        <Input name="companyName" value={form.companyName} onChange={handleChange} required className="h-11" />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <Label>Ubicación (Ciudad / País)</Label>
-                            <Input name="location" value={form.location} onChange={handleChange} required className="h-11" />
-                        </div>
-                        <div>
-                            <Label>Dirección</Label>
-                            <Input name="address" value={form.address} onChange={handleChange} className="h-11" />
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase opacity-60">Apellido</Label>
+                            <Input name="lastName" value={form.lastName} onChange={handleChange} required className="h-10" />
                         </div>
                     </div>
 
-                    <div>
-                        <Label>Website</Label>
-                        <Input name="website" value={form.website} onChange={handleChange} placeholder="https://..." className="h-11" />
-                    </div>
-
-                    <div>
-                        <Label>Tipo de Empresa</Label>
-                        <Select onValueChange={handleSelect}>
-                            <SelectTrigger className="bg-muted/30 h-11">
-                                <SelectValue placeholder="Seleccionar..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {companyOptions.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {form.companyType === 'OTHER' && (
-                        <div>
-                            <Label>Otro (especificar)</Label>
-                            <Input name="otherType" value={form.otherType} onChange={handleChange} className="h-11" />
+                    {/* Empresa y Vertical */}
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase opacity-60">Nombre Comercial de la Empresa</Label>
+                            <Input name="name" value={form.name} onChange={handleChange} required className="h-10" />
                         </div>
-                    )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <Label>Email</Label>
-                            <Input name="email" type="email" value={form.email} onChange={handleChange} required className="h-11" />
-                        </div>
-                        <div>
-                            <Label>Teléfono</Label>
-                            <Input name="phone" value={form.phone} onChange={handleChange} className="h-11" />
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase opacity-60">Vertical de Negocio</Label>
+                            <Select value={form.vertical} onValueChange={handleSelect}>
+                                <SelectTrigger className="h-10">
+                                    <SelectValue placeholder="Seleccionar..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {taxonomies.vertical?.map(t => (
+                                        <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
-                    <div className="text-sm text-muted-foreground">Al enviar se abrirá tu cliente de correo para enviar la información a LODO.</div>
+                    {/* Ubicación */}
+                    <div className="p-4 bg-muted/30 rounded-xl space-y-3">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Localización</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <Input name="country" placeholder="País" value={form.country} onChange={handleChange} required className="h-9 text-xs" />
+                            <Input name="region" placeholder="Prov." value={form.region} onChange={handleChange} required className="h-9 text-xs" />
+                            <Input name="city" placeholder="Ciudad" value={form.city} onChange={handleChange} required className="h-9 text-xs" />
+                        </div>
+                    </div>
 
-                    <div className="flex items-center gap-3 pt-2">
-                        <Button variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Button>
-                        <Button type="submit" className="bg-primary text-primary-foreground" disabled={loading}>{loading ? 'Enviando...' : 'Enviar'}</Button>
+                    {/* Solución */}
+                    <div className="space-y-1">
+                        <Label className="text-[10px] font-bold uppercase opacity-60">Breve descripción de la solución</Label>
+                        <textarea 
+                            name="solucion" 
+                            value={form.solucion} 
+                            onChange={handleChange} 
+                            required 
+                            className="w-full h-20 p-3 rounded-md border bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
+                            placeholder="¿Qué problema resuelven?"
+                        />
+                    </div>
+
+                    {/* Contacto Final */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase opacity-60">Email corporativo</Label>
+                            <Input name="mail" type="email" value={form.mail} onChange={handleChange} required className="h-10" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase opacity-60">Teléfono</Label>
+                            <Input name="phone" value={form.phone} onChange={handleChange} className="h-10" />
+                        </div>
+                    </div>
+
+                    <div className="text-[10px] text-muted-foreground italic text-center pt-2">
+                        * Al hacer clic se abrirá tu email para enviar la solicitud de forma segura.
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <Button type="button" variant="ghost" onClick={onClose} className="flex-1">Cancelar</Button>
+                        <Button type="submit" disabled={loading} className="flex-[2] font-bold uppercase tracking-widest">
+                            {loading ? 'Procesando...' : 'Generar Email'}
+                        </Button>
                     </div>
                 </form>
-
-                <DialogFooter />
             </DialogContent>
         </Dialog>
     );

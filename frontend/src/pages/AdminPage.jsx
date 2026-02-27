@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppShell from '../components/layout/AppShell';
 import AdminTable from '../components/admin/AdminTable';
-import OrgFormDrawer from '../components/admin/OrgFormDrawer';
+// MEJORA: Importamos el nuevo Formulario Maestro alineado al Backend
+import OrgFormMaster from '../components/admin/OrgFormMaster';
 import { adminFetchOrganizations as listOrganizations } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -77,7 +78,6 @@ export default function AdminPage() {
         setIsFormOpen(true);
     };
 
-    // Loading state while checking auth
     if (authLoading) {
         return (
             <AppShell>
@@ -91,7 +91,6 @@ export default function AdminPage() {
         );
     }
 
-    // Authenticated but not admin - show access denied
     if (!isAdmin) {
         return (
             <AppShell>
@@ -123,7 +122,6 @@ export default function AdminPage() {
     return (
         <AppShell>
             <div className="flex flex-col min-h-full bg-slate-50/50">
-                {/* Admin Header / Toolbar */}
                 <div className="bg-background border-b px-8 py-6 shadow-sm">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                         <div>
@@ -155,7 +153,6 @@ export default function AdminPage() {
                         </div>
                     </div>
 
-                    {/* Dashboard Cards Quick Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                         {Object.entries(counts).map(([status, count]) => (
                             <div
@@ -174,7 +171,6 @@ export default function AdminPage() {
                         ))}
                     </div>
 
-                    {/* Filters bar */}
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1 group">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
@@ -214,7 +210,6 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Main Table Area */}
                 <div className="flex-1 p-8 pt-6">
                     {loading ? (
                         <div className="space-y-4">
@@ -251,8 +246,8 @@ export default function AdminPage() {
                 </div>
             </div>
 
-            {/* Modals/Drawers */}
-            <OrgFormDrawer
+            {/* MEJORA: Utilizamos el OrgFormMaster para manejar creaciones y ediciones */}
+            <OrgFormMaster
                 isOpen={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
                 onCreated={() => refreshData(true)}

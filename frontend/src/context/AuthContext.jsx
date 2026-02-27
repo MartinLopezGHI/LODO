@@ -9,7 +9,14 @@ export function AuthProvider({ children }) {
     const [token, setToken] = useState(() => localStorage.getItem('auth_token'));
     const [loading, setLoading] = useState(true);
 
-    // Verificar token al cargar
+    // Helper interno para limpiar sesión
+    const clearAuth = () => {
+        localStorage.removeItem('auth_token');
+        setToken(null);
+        setUser(null);
+    };
+
+    // Verificar token al cargar la aplicación
     useEffect(() => {
         const verifyToken = async () => {
             if (!token) {
@@ -26,16 +33,12 @@ export function AuthProvider({ children }) {
                     const userData = await response.json();
                     setUser(userData);
                 } else {
-                    // Token inválido
-                    localStorage.removeItem('auth_token');
-                    setToken(null);
-                    setUser(null);
+                    // Si el token expiró o es inválido, limpiamos
+                    clearAuth();
                 }
             } catch (error) {
                 console.error('Error verifying token:', error);
-                localStorage.removeItem('auth_token');
-                setToken(null);
-                setUser(null);
+                clearAuth();
             } finally {
                 setLoading(false);
             }
@@ -84,16 +87,16 @@ export function AuthProvider({ children }) {
 
     const logout = async () => {
         try {
+            // Intentamos avisar al backend
             await fetch(`${API_URL}/auth/logout`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });
         } catch (error) {
-            console.error('Error during logout:', error);
+            console.error('Error during logout request:', error);
         } finally {
-            localStorage.removeItem('auth_token');
-            setToken(null);
-            setUser(null);
+            // SIEMPRE limpiamos localmente sin importar si la red falló
+            clearAuth();
         }
     };
 

@@ -10,7 +10,7 @@ const categories = [
         icon: Leaf,
         description: 'Tecnología aplicada a la agricultura para mejorar la eficiencia y sostenibilidad del campo.',
         color: '#6fea44',
-        query: 'AgTech'
+        query: 'agtech' // Sincronizado con el valor técnico en SQL
     },
     {
         id: 'FoodTech',
@@ -18,7 +18,7 @@ const categories = [
         icon: Utensils,
         description: 'Innovación en la producción, distribución y consumo de alimentos.',
         color: '#6fea44',
-        query: 'FoodTech'
+        query: 'foodtech'
     },
     {
         id: 'ClimateTech',
@@ -26,7 +26,7 @@ const categories = [
         icon: Cloud,
         description: 'Soluciones tecnológicas para mitigar el impacto ambiental y combatir el cambio climático.',
         color: '#10b981',
-        query: 'ClimateTech'
+        query: 'climatech'
     },
     {
         id: 'Industry40',
@@ -34,7 +34,7 @@ const categories = [
         icon: Cpu,
         description: 'Digitalización y automatización de procesos industriales con IoT e IA.',
         color: '#59595B',
-        query: 'IA / IoT'
+        query: 'industry_40' // Ajustado al estándar técnico
     },
     {
         id: 'Biotech',
@@ -42,7 +42,7 @@ const categories = [
         icon: FlaskConical,
         description: 'Aplicación de la biología en el desarrollo de productos y procesos innovadores.',
         color: '#6fea44',
-        query: 'Biotech'
+        query: 'biotech_bioinputs'
     },
     {
         id: 'Marketplace',
@@ -50,7 +50,7 @@ const categories = [
         icon: ChartBar,
         description: 'Soluciones financieras y plataformas de comercio para el ecosistema productivo.',
         color: '#6fea44',
-        query: 'E-commerce'
+        query: 'marketplace'
     }
 ];
 
@@ -58,7 +58,12 @@ const CategoryExplorer = () => {
     const [selected, setSelected] = useState(categories[0]);
     const navigate = useNavigate();
     const lodoDark = "#59595B"; 
-    const lodoLight = "#f4f4f5"; // El gris clarito para las cards
+    const lodoLight = "#f4f4f5";
+
+    const handleNavigate = () => {
+        // Redirigimos al mapa pasando el parámetro 'vertical' correcto
+        navigate(`/map?vertical=${selected.query}`);
+    };
 
     return (
         <section className="py-24 px-6 transition-colors duration-500 overflow-hidden" style={{ backgroundColor: lodoDark }}>
@@ -73,7 +78,6 @@ const CategoryExplorer = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Category Tiles en Gris Clarito */}
                     <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {categories.map((cat) => {
                             const isSelected = selected.id === cat.id;
@@ -106,7 +110,6 @@ const CategoryExplorer = () => {
                         })}
                     </div>
 
-                    {/* Detail Card en Gris Clarito */}
                     <div className="lg:col-span-5">
                         <AnimatePresence mode="wait">
                             <motion.div
@@ -117,7 +120,6 @@ const CategoryExplorer = () => {
                                 transition={{ duration: 0.3 }}
                                 className="p-10 rounded-[2.5rem] bg-[#f4f4f5] shadow-2xl relative z-10"
                             >
-                                {/* Badge corregido */}
                                 <div className="inline-block px-3 py-1 rounded-lg bg-[#59595B] text-[10px] font-bold text-[#6fea44] uppercase tracking-widest mb-6">
                                     Foco Estratégico
                                 </div>
@@ -127,9 +129,8 @@ const CategoryExplorer = () => {
                                     {selected.description}
                                 </p>
 
-                                {/* Botón Espejo */}
                                 <button
-                                    onClick={() => navigate(`/map?filter=${selected.query}`)}
+                                    onClick={handleNavigate}
                                     className="w-full py-4 rounded-xl bg-[#6fea44] text-[#59595B] font-bold uppercase text-sm tracking-widest flex items-center justify-center border-2 border-[#6fea44] hover:bg-transparent hover:text-[#59595B] transition-all duration-300 group"
                                 >
                                     Ver en el mapa

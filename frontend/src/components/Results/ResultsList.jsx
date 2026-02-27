@@ -69,21 +69,24 @@ export default function ResultsList({ organizations, onSelect, loading, hideHead
                             >
                                 {org.organizationType}
                             </Badge>
+                            
+                            {/* ALINEACIÓN: Usamos vertical en lugar de sectorPrimary */}
                             <Badge
                                 className="text-[10px] uppercase font-black px-2.5 py-0.5 bg-primary/10 text-primary border-none tracking-widest"
                             >
-                                {org.sectorPrimary}
+                                {org.vertical}
                             </Badge>
-                            {org.stage && (
+
+                            {/* ALINEACIÓN: Usamos estadioActual en lugar de stage */}
+                            {org.estadioActual && (
                                 <Badge
                                     className="text-[10px] uppercase font-black px-2.5 py-0.5 bg-accent/20 text-accent-foreground border-none tracking-widest"
                                 >
-                                    {org.stage}
+                                    {org.estadioActual}
                                 </Badge>
                             )}
                         </div>
 
-                        {/* Interactive Accent */}
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300" />
                     </div>
                 ))}

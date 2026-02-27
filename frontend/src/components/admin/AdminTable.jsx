@@ -63,7 +63,7 @@ export default function AdminTable({ organizations, onRefresh, onSelect }) {
         if (!orgToDelete) return;
         setLoading(true);
         try {
-            // Si ya está archivada, mandamos force=true para permitir el hard delete (borrado real)
+            // Si ya está archivada, mandamos force=true para permitir el hard delete
             const isArchived = orgToDelete.status === 'ARCHIVED';
             await deleteOrganization(orgToDelete.id, isArchived);
 
@@ -112,7 +112,8 @@ export default function AdminTable({ organizations, onRefresh, onSelect }) {
                                 <TableCell className="font-medium">
                                     <div className="flex flex-col min-w-[150px]">
                                         <span className="text-sm font-bold truncate max-w-[200px]" title={org.name}>{org.name}</span>
-                                        <span className="text-[10px] text-muted-foreground uppercase">{org.sectorPrimary}</span>
+                                        {/* AJUSTE NUEVO: Usamos 'vertical' en lugar de 'sectorPrimary' */}
+                                        <span className="text-[10px] text-muted-foreground uppercase">{org.vertical}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>

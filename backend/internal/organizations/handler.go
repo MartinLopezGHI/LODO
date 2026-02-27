@@ -2,12 +2,12 @@ package organizations
 
 import (
 	"backend/internal/geocoding"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
 
 // Handler expone los endpoints HTTP para organizaciones.
-// NO contiene lógica de negocio.
 type Handler struct {
 	Service  *Service
 	Repo     *Repository
@@ -22,19 +22,16 @@ func NewHandler(service *Service, repo *Repository, geocoder *geocoding.Nominati
 	}
 }
 
+// --- ENDPOINTS ADMINISTRATIVOS (CRUD) ---
+
 // Create crea una organización en estado DRAFT.
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var org Organization
-
-	if err := decodeJSON(r, &org); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&org); err != nil {
+		http.Error(w, "Invalid JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Estado inicial
-	org.Status = StatusDraft
-
-	// Normalización y validación
 	if err := Normalize(&org); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -47,25 +44,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	encodeJSON(w, org)
+	json.NewEncoder(w).Encode(org)
 }
 
 // Update actualiza los campos permitidos de una organización.
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut && r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	id := extractID(r.URL.Path)
 	if id == "" {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		http.Error(w, "ID es obligatorio para actualizar", http.StatusBadRequest)
 		return
 	}
 
 	var org Organization
-	if err := decodeJSON(r, &org); err != nil {
-		http.Error(w, "Invalid body: "+err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&org); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
 
@@ -81,14 +73,14 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, org)
+	json.NewEncoder(w).Encode(org)
 }
 
-// GetByID devuelve el detalle admin de una organización (sin importar status).
+// GetByID devuelve el detalle administrativo completo.
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id := extractID(r.URL.Path)
 	if id == "" {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		http.Error(w, "ID inválido o no proporcionado", http.StatusBadRequest)
 		return
 	}
 
@@ -99,159 +91,88 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, org)
+	json.NewEncoder(w).Encode(org)
+}
+
+// List devuelve la lista filtrada para administración.
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	params := getQueryParams(r)
+	orgs, err := h.Repo.FindFiltered(params)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orgs)
 }
 
 // Delete elimina o archiva una organización.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	id := extractID(r.URL.Path)
 	if id == "" {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		http.Error(w, "ID requerido para eliminar", http.StatusBadRequest)
 		return
 	}
-
+	
 	force := r.URL.Query().Get("force") == "true"
 
 	if err := h.Service.Delete(id, force); err != nil {
 		if strings.Contains(err.Error(), "force=true") {
-			http.Error(w, err.Error(), http.StatusConflict) // 409
-		} else if strings.Contains(err.Error(), "not found") {
-			http.Error(w, "Not found", http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusConflict)
 		} else {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// SubmitForReview mueve una organización a IN_REVIEW.
+// --- FLUJO DE ESTADOS (LIFECYCLE) ---
+
 func (h *Handler) SubmitForReview(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	id := extractActionID(r.URL.Path, "review")
+	if id == "" {
+		http.Error(w, "ID no encontrado en la ruta de revisión", http.StatusBadRequest)
 		return
 	}
-
-	// /organizations/{id}/review
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-
-	if len(parts) < 2 {
-		http.Error(w, "invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	id := parts[1]
-
 	if err := h.Service.SubmitForReview(id); err != nil {
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "no rows") {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
-// Publish publica una organización.
 func (h *Handler) Publish(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	id := extractActionID(r.URL.Path, "publish")
+	if id == "" {
+		http.Error(w, "ID no encontrado en la ruta de publicación", http.StatusBadRequest)
 		return
 	}
-
-	// /organizations/{id}/publish
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-
-	if len(parts) < 2 {
-		http.Error(w, "invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	id := parts[1]
-
 	if err := h.Service.Publish(id); err != nil {
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "no rows") {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		} else if strings.Contains(err.Error(), "validation") || strings.Contains(err.Error(), "required") || strings.Contains(err.Error(), "must be") {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity) // 422
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
-// Archive archiva una organización.
 func (h *Handler) Archive(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	id := extractActionID(r.URL.Path, "archive")
+	if id == "" {
+		http.Error(w, "ID no encontrado en la ruta de archivo", http.StatusBadRequest)
 		return
 	}
-
-	// /organizations/{id}/archive
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-
-	if len(parts) < 2 {
-		http.Error(w, "invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	id := parts[1]
-
 	if err := h.Service.Archive(id); err != nil {
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "no rows") {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
-// --- Helpers ---
+// --- ENDPOINTS PÚBLICOS ---
 
-func extractID(path string) string {
-	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) == 0 {
-		return ""
-	}
-	// Si la ruta es /organizations/{id}
-	if parts[0] == "organizations" && len(parts) == 2 {
-		return parts[1]
-	}
-	// Si la ruta es /public/organizations/{id}
-	if parts[0] == "public" && parts[1] == "organizations" && len(parts) == 3 {
-		return parts[2]
-	}
-	return ""
-}
-
-// ListPublic devuelve solo organizaciones publicadas (para el mapa)
 func (h *Handler) ListPublic(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	qp := r.URL.Query()
-	params := make(map[string]string)
-	for k, v := range qp {
-		if len(v) > 0 {
-			params[k] = v[0]
-		}
-	}
+	params := getQueryParams(r)
 	params["status"] = string(StatusPublished)
 
 	orgs, err := h.Repo.FindFiltered(params)
@@ -261,143 +182,72 @@ func (h *Handler) ListPublic(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, orgs)
+	json.NewEncoder(w).Encode(orgs)
 }
 
-// Aggregates devuelve los filtros dinámicos y sus conteos.
-func (h *Handler) Aggregates(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	qp := r.URL.Query()
-	params := make(map[string]string)
-	for k, v := range qp {
-		if len(v) > 0 {
-			params[k] = v[0]
-		}
-	}
-
-	data, err := h.Repo.GetAggregates(params)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, data)
-}
-
-// GetPublicByID devuelve el detalle de una organización publicada.
 func (h *Handler) GetPublicByID(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	id := extractID(r.URL.Path)
-	if id == "" {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
-
 	org, err := h.Repo.FindPublishedByID(id)
 	if err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, org)
+	json.NewEncoder(w).Encode(org)
 }
 
-// List admin version
-func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	qp := r.URL.Query()
-	params := make(map[string]string)
-	for k, v := range qp {
-		if len(v) > 0 {
-			params[k] = v[0]
-		}
-	}
-
-	orgs, err := h.Repo.FindFiltered(params)
+func (h *Handler) Aggregates(w http.ResponseWriter, r *http.Request) {
+	params := getQueryParams(r)
+	data, err := h.Repo.GetAggregates(params)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, orgs)
+	json.NewEncoder(w).Encode(data)
 }
 
-// Geocode busca coordenadas para una organización existente.
+// --- GEOPOSICIONAMIENTO ---
+
 func (h *Handler) Geocode(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Esperamos /organizations/{id}/geocode
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 2 {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
-	id := parts[1]
-
+	id := extractActionID(r.URL.Path, "geocode")
 	org, err := h.Repo.FindByID(id)
 	if err != nil {
-		http.Error(w, "Organization not found", http.StatusNotFound)
+		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
 	lat, lng, err := h.Geocoder.Geocode(org.City, org.Region, org.Country)
 	if err != nil {
-		if err.Error() == "no results found" {
-			http.Error(w, "Coordinates not found for this location", http.StatusNotFound)
-		} else {
-			http.Error(w, "Geocoding service error: "+err.Error(), http.StatusBadGateway)
-		}
+		http.Error(w, "Geocoding error: "+err.Error(), http.StatusBadGateway)
 		return
 	}
 
 	if err := h.Repo.UpdateCoordinates(id, lat, lng); err != nil {
-		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	updatedOrg, _ := h.Repo.FindByID(id)
-	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, updatedOrg)
+	w.WriteHeader(http.StatusOK)
 }
 
-// PatchCoordinates actualiza manualmente las coordenadas.
 func (h *Handler) PatchCoordinates(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPatch && r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
+	id := extractActionID(r.URL.Path, "coordinates")
+	if id == "" {
+		id = extractID(r.URL.Path) // Fallback por si la URL no tiene sufijo
 	}
 
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 2 {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+	if id == "" {
+		http.Error(w, "ID inválido para coordenadas", http.StatusBadRequest)
 		return
 	}
-	id := parts[1]
 
 	var coords struct {
 		Lat float64 `json:"lat"`
 		Lng float64 `json:"lng"`
 	}
 
-	if err := decodeJSON(r, &coords); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&coords); err != nil {
 		http.Error(w, "Invalid body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -407,7 +257,50 @@ func (h *Handler) PatchCoordinates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedOrg, _ := h.Repo.FindByID(id)
-	w.Header().Set("Content-Type", "application/json")
-	encodeJSON(w, updatedOrg)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "coordinates updated successfully"}`))
+}
+
+// --- HELPERS INTERNOS MEJORADOS ---
+
+func extractID(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	
+	// Buscamos dinámicamente el segmento después de "organizations"
+	for i, p := range parts {
+		if p == "organizations" && i+1 < len(parts) {
+			id := parts[i+1]
+			// Validamos que no sea una palabra clave de acción
+			reserved := map[string]bool{
+				"review": true, "publish": true, "archive": true, 
+				"geocode": true, "coordinates": true, "aggregates": true,
+			}
+			if reserved[id] {
+				return ""
+			}
+			return id
+		}
+	}
+	return ""
+}
+
+func extractActionID(path string, action string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for i, p := range parts {
+		// En /organizations/{id}/{action}, el ID es el anterior a la acción
+		if p == action && i > 0 {
+			return parts[i-1]
+		}
+	}
+	return ""
+}
+
+func getQueryParams(r *http.Request) map[string]string {
+	params := make(map[string]string)
+	for k, v := range r.URL.Query() {
+		if len(v) > 0 {
+			params[k] = v[0]
+		}
+	}
+	return params
 }

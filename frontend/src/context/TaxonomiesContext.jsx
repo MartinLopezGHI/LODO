@@ -12,16 +12,18 @@ export const useTaxonomies = () => {
 };
 
 export const TaxonomiesProvider = ({ children }) => {
+    // Sincronizado con los nombres exactos de las tablas en MariaDB (003_seed_taxonomies.sql)
     const [taxonomies, setTaxonomies] = useState({
-        organizationType: [],
-        sectorPrimary: [],
-        sectorSecondary: [],
-        stage: [],
-        outcomeStatus: [],
+        organizationtype: [],
+        vertical: [],
+        subvertical: [],
+        estadioactual: [],
+        outcomestatus: [],
         technology: [],
-        impactArea: [],
+        impactarea: [],
         badge: [],
     });
+    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -29,11 +31,11 @@ export const TaxonomiesProvider = ({ children }) => {
         const loadTaxonomies = async () => {
             try {
                 const data = await fetchTaxonomies();
-                // Ensure all expected keys exist even if API returns partial data
+                // Mergeamos los datos asegurando que las llaves del backend sobrescriban las iniciales
                 setTaxonomies(prev => ({ ...prev, ...data }));
                 setLoading(false);
             } catch (err) {
-                console.error("Failed to load taxonomies", err);
+                console.error("Failed to load taxonomies from API:", err);
                 setError(err);
                 setLoading(false);
             }
@@ -42,19 +44,34 @@ export const TaxonomiesProvider = ({ children }) => {
         loadTaxonomies();
     }, []);
 
-    // Helper functions to get options for Select components
-    // Map { value, label } -> { value, label } (already in that format from API usually)
+    /**
+     * getOptions: Retorna la lista de una categoría.
+     * Mejora: Normaliza el nombre de la categoría a minúsculas por seguridad.
+     */
     const getOptions = (category) => {
-        return taxonomies[category] || [];
+        if (!category) return [];
+        const key = category.toLowerCase();
+        return taxonomies[key] || [];
     };
 
+    /**
+     * getValue: Encuentra un objeto completo {value, label} dado un valor.
+     */
     const getValue = (category, value) => {
-        const list = taxonomies[category] || [];
+        const list = getOptions(category);
         return list.find(item => item.value === value);
     };
 
+    const value = {
+        taxonomies,
+        loading,
+        error,
+        getOptions,
+        getValue
+    };
+
     return (
-        <TaxonomiesContext.Provider value={{ taxonomies, loading, error, getOptions, getValue }}>
+        <TaxonomiesContext.Provider value={value}>
             {children}
         </TaxonomiesContext.Provider>
     );

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Search, Filter, Layers, Pin, Globe } from 'lucide-react';
+import { Search, Layers, Pin, Globe } from 'lucide-react';
 import { fetchAggregates } from '../../services/api';
 
 const AnimatedCounter = React.memo(({ value }) => {
@@ -31,7 +31,6 @@ const Stats = () => {
     const [stats, setStats] = useState({ organizations: 0, countries: 0, sectors: 0, types: 0 });
     const [loading, setLoading] = useState(true);
 
-    // Colores de marca
     const lodoGreen = "#6FE844";
     const lodoDark = "#59595B";
 
@@ -39,14 +38,23 @@ const Stats = () => {
         const loadStats = async () => {
             try {
                 const data = await fetchAggregates();
-                setStats({
-                    organizations: data.organizationTypes.reduce((acc, curr) => acc + curr.count, 0),
-                    countries: data.countries.filter(c => c.value && c.value !== '').length,
-                    sectors: data.sectorsPrimary.length,
-                    types: data.organizationTypes.length
-                });
+                
+                // ALINEACIÓN CON EL BACKEND:
+                // El backend devuelve: verticals, estadios, countries, organizationTypes
+                if (data) {
+                    setStats({
+                        // Calculamos el total sumando los conteos de tipos de organización
+                        organizations: (data.organizationTypes || []).reduce((acc, curr) => acc + curr.count, 0),
+                        // Contamos países únicos
+                        countries: (data.countries || []).filter(c => c.value && c.value !== '').length,
+                        // Cambiamos sectorsPrimary por verticals (nombre real en el backend)
+                        sectors: (data.verticals || []).length,
+                        // Cantidad de categorías de tipo
+                        types: (data.organizationTypes || []).length
+                    });
+                }
             } catch (error) {
-                console.error("Error loading stats:", error);
+                console.error("Error loading home stats:", error);
             } finally {
                 setLoading(false);
             }
@@ -57,16 +65,18 @@ const Stats = () => {
     const statsConfig = useMemo(() => [
         { label: 'Organizaciones', value: stats.organizations, icon: Layers },
         { label: 'Países', value: stats.countries, icon: Globe },
-        { label: 'Sectores', value: stats.sectors, icon: Pin },
+        { label: 'Verticales', value: stats.sectors, icon: Pin }, // Etiqueta actualizada
         { label: 'Tipos', value: stats.types, icon: Search },
     ], [stats]);
+
+    if (!loading && stats.organizations === 0) return null;
 
     return (
         <section className="py-24 bg-zinc-100 transition-colors duration-500 overflow-hidden">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="flex flex-col lg:flex-row gap-16 items-center">
                     
-                    {/* Visual de Mapa con Interactividad de Movimiento */}
+                    {/* Visual de Mapa con Interactividad */}
                     <div className="flex-1 relative order-2 lg:order-1 w-full group/map">
                         <motion.div
                             initial={{ opacity: 0, rotateY: -10 }}
@@ -75,7 +85,6 @@ const Stats = () => {
                             viewport={{ once: true }}
                             className="relative rounded-[2.5rem] overflow-hidden border border-zinc-200 bg-white aspect-video shadow-2xl transition-transform duration-500 ease-out"
                         >
-                            {/* Escáner visual que recorre el mapa */}
                             <motion.div 
                                 animate={{ top: ["-100%", "200%"] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
@@ -85,18 +94,16 @@ const Stats = () => {
                             <div className="absolute top-6 left-6 z-20 flex gap-2">
                                 <div className="px-4 py-2 bg-white/90 backdrop-blur-md rounded-xl border border-zinc-200 flex items-center text-xs text-zinc-500 shadow-sm">
                                     <Search className="w-3 h-3 mr-2 text-[#6FE844]" />
-                                    Mapeando ecosistema...
+                                    Actualizando ecosistema...
                                 </div>
                             </div>
 
-                            {/* Grilla del Mapa */}
                             <div className="absolute inset-0 bg-zinc-50 grid grid-cols-12 grid-rows-12 opacity-40">
                                 {Array.from({ length: 144 }).map((_, i) => (
                                     <div key={i} className="border-[0.5px] border-zinc-200" />
                                 ))}
                             </div>
 
-                            {/* Puntos interactivos con pulso */}
                             {[
                                 { t: '20%', l: '30%' }, { t: '45%', l: '60%' },
                                 { t: '70%', l: '25%' }, { t: '40%', l: '15%' },
@@ -119,7 +126,7 @@ const Stats = () => {
 
                     {/* Contenido de Stats */}
                     <div className="flex-1 order-1 lg:order-2">
-                        <h2 className="text-4xl md:text-5xl font-bold text-[#59595B] mb-8 font-montserrat">
+                        <h2 className="text-4xl md:text-5xl font-bold text-[#59595B] mb-8 font-montserrat tracking-tight leading-tight">
                             Información estratégica en <span className="text-[#6FE844]">tiempo real</span>
                         </h2>
                         
@@ -130,7 +137,6 @@ const Stats = () => {
                                     className="flex items-start gap-4 group cursor-default"
                                     whileHover={{ x: 10 }}
                                 >
-                                    {/* Icono con Inversión de Color en Hover */}
                                     <div 
                                         className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300 border border-[#6FE844]/20 bg-white group-hover:bg-[#6FE844] group-hover:border-transparent group-hover:shadow-lg"
                                         style={{ color: lodoGreen }}
@@ -148,7 +154,7 @@ const Stats = () => {
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="text-xs text-zinc-400 font-black uppercase tracking-[0.2em]">{stat.label}</div>
+                                        <div className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.2em]">{stat.label}</div>
                                     </div>
                                 </motion.div>
                             ))}

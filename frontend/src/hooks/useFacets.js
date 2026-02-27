@@ -2,32 +2,28 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { fetchAggregates } from '../services/api';
 
 /**
- * Hook to manage faceted search filters.
- * It fetches the available options for each filter key, 
- * excluding the current filter value itself (self-excluding facets).
- * 
- * @param {Object} filters - Current active filters
+ * Hook para gestionar filtros de búsqueda por facetas (conteos dinámicos).
+ * Sincronizado con la nueva estructura del backend: verticals y estadios.
  */
 export function useFacets(filters) {
     const [facets, setFacets] = useState({
         countries: [],
-        sectorsPrimary: [],
+        verticals: [],         // Antes sectorsPrimary
         organizationTypes: [],
-        stages: [],
+        estadios: [],          // Antes stages
         outcomeStatuses: []
     });
     const [loading, setLoading] = useState(true);
 
     const abortControllerRef = useRef(null);
 
-    // Serialize filters to prevent infinite loops from object reference changes
+    // Serializamos filtros para evitar bucles infinitos por referencia
     const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
 
     useEffect(() => {
         const loadFacets = async () => {
             setLoading(true);
 
-            // Cancel previous requests
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
@@ -35,32 +31,35 @@ export function useFacets(filters) {
             abortControllerRef.current = aborter;
 
             try {
-                // Parse filters back from the serialized key
                 const currentFilters = JSON.parse(filtersKey);
 
-                // Helper to get params without a specific key (for self-excluding)
+                // Helper para auto-excluir el filtro activo en el conteo de su propia categoría
                 const getParamsExcluding = (key) => {
                     const p = { ...currentFilters };
                     delete p[key];
                     return p;
                 };
 
-                // Fetch all facets in parallel
                 const signal = aborter.signal;
-                const [resCountry, resSector, resType, resStage, resStatus] = await Promise.all([
+
+                /**
+                 * Ejecutamos las llamadas en paralelo.
+                 * Nota: Usamos los nombres de parámetros que espera el backend (vertical, estadioActual, etc.)
+                 */
+                const [resCountry, resVertical, resType, resEstadio, resStatus] = await Promise.all([
                     fetchAggregates(getParamsExcluding('country'), signal),
-                    fetchAggregates(getParamsExcluding('sectorPrimary'), signal),
+                    fetchAggregates(getParamsExcluding('vertical'), signal),
                     fetchAggregates(getParamsExcluding('organizationType'), signal),
-                    fetchAggregates(getParamsExcluding('stage'), signal),
+                    fetchAggregates(getParamsExcluding('estadioActual'), signal),
                     fetchAggregates(getParamsExcluding('outcomeStatus'), signal)
                 ]);
 
                 if (!signal.aborted) {
                     setFacets({
                         countries: resCountry.countries || [],
-                        sectorsPrimary: resSector.sectorsPrimary || [],
+                        verticals: resVertical.verticals || [],
                         organizationTypes: resType.organizationTypes || [],
-                        stages: resStage.stages || [],
+                        estadios: resEstadio.estadios || [],
                         outcomeStatuses: resStatus.outcomeStatuses || []
                     });
                     setLoading(false);
@@ -68,13 +67,12 @@ export function useFacets(filters) {
 
             } catch (err) {
                 if (err.name !== 'AbortError') {
-                    console.error("Error loading facets:", err);
+                    console.error("Error al cargar facetas:", err);
                     setLoading(false);
                 }
             }
         };
 
-        // Debounce
         const timeoutId = setTimeout(loadFacets, 300);
 
         return () => {
@@ -83,7 +81,7 @@ export function useFacets(filters) {
                 abortControllerRef.current.abort();
             }
         };
-    }, [filtersKey]); // Use serialized key instead of filters object
+    }, [filtersKey]);
 
     return { facets, loading };
 }

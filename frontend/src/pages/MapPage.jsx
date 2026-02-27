@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import AppShell from '../components/layout/AppShell';
 import MapView from '../components/Map/MapView';
-import OrgDetailDrawer from '../components/Detail/OrgDetailDrawer';
+import OrgDetailDrawer from '../components/Detail/OrgDetailDrawer'; // Ruta corregida según limpieza
 import MapShellLayout from '../components/Map/MapShellLayout';
 import { useAuth } from '../context/AuthContext';
 import { fetchOrganizations } from '../services/api';
@@ -22,13 +22,15 @@ function useDebounce(value, delay) {
 export default function MapPage() {
     const [searchParams] = useSearchParams();
 
+    // Sincronizamos el estado inicial con los nombres del nuevo Backend
     const [filters, setFilters] = useState(() => {
-        const initialFilter = searchParams.get('filter') || '';
+        // Ahora buscamos 'vertical' en la URL (enviado desde CategoryExplorer)
+        const initialVertical = searchParams.get('vertical') || searchParams.get('filter') || '';
         return {
             country: '',
-            sectorPrimary: initialFilter,
+            vertical: initialVertical, // Cambiado de sectorPrimary
             organizationType: '',
-            stage: '',
+            estadioActual: '',        // Cambiado de stage
             outcomeStatus: '',
             q: '',
             onlyMappable: false
@@ -37,9 +39,9 @@ export default function MapPage() {
 
     const [bbox, setBbox] = useState(null);
     const debouncedFilters = useDebounce(filters, 400);
-    const debouncedBbox = useDebounce(bbox, 400);
-
     const [organizations, setOrganizations] = useState([]);
+    
+    // El hook useFacets ya fue actualizado para manejar 'vertical' y 'estadioActual'
     const { facets: aggregates, loading: facetsLoading } = useFacets(debouncedFilters);
 
     const [loadingResults, setLoadingResults] = useState(false);
@@ -47,7 +49,6 @@ export default function MapPage() {
     const [centeredLocation, setCenteredLocation] = useState(null);
     const { isAdmin } = useAuth();
     const [refreshKey, setRefreshKey] = useState(0);
-
 
     const abortControllerRef = useRef(null);
 
@@ -60,10 +61,8 @@ export default function MapPage() {
 
             setLoadingResults(true);
             try {
-                const params = { ...debouncedFilters };
-                // Don't filter by bbox - show all organizations matching filters
-
-                const data = await fetchOrganizations(params, controller.signal);
+                // Los params ya llevan las keys correctas (vertical, estadioActual)
+                const data = await fetchOrganizations(debouncedFilters, controller.signal);
                 if (!controller.signal.aborted) {
                     setOrganizations(data || []);
                 }
@@ -84,7 +83,7 @@ export default function MapPage() {
         return () => {
             if (abortControllerRef.current) abortControllerRef.current.abort();
         };
-    }, [debouncedFilters, refreshKey]); // Removed debouncedBbox from dependencies
+    }, [debouncedFilters, refreshKey]);
 
     const handleMarkerClick = useCallback((id) => {
         setSelectedOrgId(id);
@@ -105,9 +104,9 @@ export default function MapPage() {
     const handleResetFilters = () => {
         setFilters({
             country: '',
-            sectorPrimary: '',
+            vertical: '',
             organizationType: '',
-            stage: '',
+            estadioActual: '',
             outcomeStatus: '',
             q: '',
             onlyMappable: false
@@ -149,8 +148,6 @@ export default function MapPage() {
                     onClose={() => setSelectedOrgId(null)}
                 />
             )}
-
-            {/* Public org creation moved to dedicated /contacto page */}
         </AppShell>
     );
 }

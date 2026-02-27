@@ -1,28 +1,30 @@
-CREATE TABLE organizations (
-  id CHAR(36) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  organization_type VARCHAR(50) NOT NULL,
-  sector_primary VARCHAR(50) NOT NULL,
-  sector_secondary VARCHAR(50),
-  stage VARCHAR(50),
-  outcome_status VARCHAR(50) NOT NULL,
-  country VARCHAR(100) NOT NULL,
-  region VARCHAR(100) NOT NULL,
-  city VARCHAR(100) NOT NULL,
-  website VARCHAR(255),
-  notes TEXT,
-  status ENUM('DRAFT','IN_REVIEW','PUBLISHED','ARCHIVED') DEFAULT 'DRAFT',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE audit_logs (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  entity_type VARCHAR(50),
-  entity_id CHAR(36),
-  field_name VARCHAR(100),
-  old_value TEXT,
-  new_value TEXT,
-  changed_by VARCHAR(100),
-  changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS organizations (
+    id CHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    website VARCHAR(255) NULL,
+    vertical VARCHAR(64) NOT NULL,       -- Antes sector_primary
+    sub_vertical VARCHAR(64) NULL,      -- Antes sector_secondary
+    country VARCHAR(100) NOT NULL,
+    region VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    logo_url VARCHAR(512) NULL,         -- URL de GCS
+    estadio_actual VARCHAR(64) NULL,    -- Antes stage
+    solucion TEXT NULL,                 -- Antes description
+    mail VARCHAR(255) NULL,             -- Antes contact_email
+    social_media JSON NULL,             -- Flexibilidad total para RRSS
+    contact_phone VARCHAR(50) NULL,
+    founders JSON NULL,                 -- Lista flexible de nombres
+    founded INT NULL,                   -- Año de constitución
+    organization_type VARCHAR(64) NOT NULL,
+    outcome_status VARCHAR(64) NOT NULL,
+    notes TEXT NULL,
+    status ENUM('DRAFT', 'IN_REVIEW', 'PUBLISHED', 'ARCHIVED') DEFAULT 'DRAFT',
+    lat DECIMAL(10, 7) NULL,
+    lng DECIMAL(10, 7) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Índices para velocidad de búsqueda
+    INDEX idx_status_vertical (status, vertical),
+    INDEX idx_geo (country, region, city)
 );

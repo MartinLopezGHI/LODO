@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
     X, ExternalLink, MapPin, Globe, Linkedin, Mail, Phone,
-    Instagram, Tag, Briefcase, Info, Layers, Award
+    Instagram, Tag, Info, Layers, Award
 } from 'lucide-react';
 import {
-    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from '../ui/dialog';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -56,7 +56,6 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                     </div>
                 ) : org ? (
                     <>
-                        {/* Header Image/Background placeholder */}
                         <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent relative">
                             <Button
                                 variant="ghost"
@@ -70,13 +69,19 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
 
                         <div className="px-8 -mt-10 relative z-10 flex flex-col flex-1 min-h-0">
                             <div className="bg-background p-4 rounded-2xl shadow-xl border mb-4 inline-flex self-start">
-                                <Globe className="h-10 w-10 text-primary" />
+                                {org.logoUrl ? (
+                                    <img src={org.logoUrl} alt={org.name} className="h-10 w-10 object-contain" />
+                                ) : (
+                                    <Globe className="h-10 w-10 text-primary" />
+                                )}
                             </div>
 
                             <DialogHeader className="mb-6">
                                 <div className="flex items-center gap-2 mb-1">
                                     <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">{org.organizationType}</Badge>
-                                    <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider bg-primary/10 text-primary border-none">{org.sectorPrimary}</Badge>
+                                    <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider bg-primary/10 text-primary border-none">
+                                        {org.vertical}
+                                    </Badge>
                                 </div>
                                 <DialogTitle className="text-3xl font-extrabold tracking-tight text-foreground/90">
                                     {org.name}
@@ -89,9 +94,9 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
 
                             <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
                                 <TabsList className="w-full justify-start bg-transparent border-b rounded-none px-0 mb-6 gap-6 h-auto pb-2">
-                                    <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 text-sm font-semibold transition-all">Overview</TabsTrigger>
-                                    <TabsTrigger value="location" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 text-sm font-semibold transition-all">Location</TabsTrigger>
-                                    <TabsTrigger value="links" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 text-sm font-semibold transition-all">Links</TabsTrigger>
+                                    <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 text-sm font-semibold transition-all">Resumen</TabsTrigger>
+                                    <TabsTrigger value="location" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 text-sm font-semibold transition-all">Ubicación</TabsTrigger>
+                                    <TabsTrigger value="links" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-2 text-sm font-semibold transition-all">Contacto</TabsTrigger>
                                 </TabsList>
 
                                 <ScrollArea className="flex-1 px-1">
@@ -99,10 +104,10 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                         <section>
                                             <div className="flex items-center gap-2 mb-3 text-muted-foreground">
                                                 <Info className="h-4 w-4" />
-                                                <h4 className="text-xs font-bold uppercase tracking-widest">Descripción</h4>
+                                                <h4 className="text-xs font-bold uppercase tracking-widest">Sobre la Solución</h4>
                                             </div>
                                             <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                                                {org.description || 'Sin descripción disponible.'}
+                                                {org.solucion || 'Sin descripción disponible.'}
                                             </p>
                                         </section>
 
@@ -112,16 +117,16 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                             <section>
                                                 <div className="flex items-center gap-2 mb-3 text-muted-foreground">
                                                     <Layers className="h-4 w-4" />
-                                                    <h4 className="text-xs font-bold uppercase tracking-widest">Clasificación</h4>
+                                                    <h4 className="text-xs font-bold uppercase tracking-widest">Estado</h4>
                                                 </div>
                                                 <div className="space-y-4">
                                                     <div>
-                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Etapa</p>
-                                                        <p className="text-sm font-semibold">{org.stage || '-'}</p>
+                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Etapa Actual</p>
+                                                        <p className="text-sm font-semibold">{org.estadioActual || '-'}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Estado de Salida</p>
-                                                        <p className="text-sm font-semibold">{org.outcomeStatus || '-'}</p>
+                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Estado Operativo</p>
+                                                        <p className="text-sm font-semibold capitalize">{org.outcomeStatus || '-'}</p>
                                                     </div>
                                                 </div>
                                             </section>
@@ -129,33 +134,21 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                             <section>
                                                 <div className="flex items-center gap-2 mb-3 text-muted-foreground">
                                                     <Tag className="h-4 w-4" />
-                                                    <h4 className="text-xs font-bold uppercase tracking-widest">Etiquetas</h4>
+                                                    <h4 className="text-xs font-bold uppercase tracking-widest">Atributos</h4>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {org.tags?.map((tag, i) => (
-                                                        <Badge key={i} variant="outline" className="text-[10px]">{tag}</Badge>
+                                                    {org.badges?.map((badge, i) => (
+                                                        <Badge key={i} variant="outline" className="text-[10px]">{badge}</Badge>
                                                     ))}
-                                                    {org.technology?.map((tech, i) => (
-                                                        <Badge key={i} variant="secondary" className="text-[10px]">{tech}</Badge>
-                                                    ))}
-                                                    {!org.tags?.length && !org.technology?.length && <span className="text-xs text-muted-foreground italic">Ninguna</span>}
+                                                    {org.founders?.length > 0 && (
+                                                        <div className="w-full mt-2">
+                                                            <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Fundadores</p>
+                                                            <p className="text-xs">{org.founders.join(', ')}</p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </section>
                                         </div>
-
-                                        {org.impactArea?.length > 0 && (
-                                            <section>
-                                                <div className="flex items-center gap-2 mb-3 text-muted-foreground">
-                                                    <Award className="h-4 w-4" />
-                                                    <h4 className="text-xs font-bold uppercase tracking-widest">Áreas de Impacto</h4>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {org.impactArea.map((area, i) => (
-                                                        <Badge key={i} className="text-[10px] bg-green-500/10 text-green-600 hover:bg-green-500/20 border-none">{area}</Badge>
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        )}
                                     </TabsContent>
 
                                     <TabsContent value="location" className="mt-0 space-y-6 pb-8">
@@ -165,14 +158,13 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                                     <MapPin className="h-5 w-5 text-primary" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-lg">{org.city || 'Desconocida'}</h4>
+                                                    <h4 className="font-bold text-lg">{org.city || 'Ubicación'}</h4>
                                                     <p className="text-sm text-muted-foreground">{org.region}, {org.country}</p>
                                                 </div>
                                             </div>
-                                            <Separator className="bg-white/10" />
                                             {org.lat && org.lng && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Coordenadas: <code className="bg-muted px-1 rounded">{org.lat.toFixed(4)}, {org.lng.toFixed(4)}</code>
+                                                <div className="text-[10px] text-muted-foreground bg-background/50 p-2 rounded-md">
+                                                    Lat: {org.lat.toFixed(4)} | Lng: {org.lng.toFixed(4)}
                                                 </div>
                                             )}
                                         </div>
@@ -180,35 +172,31 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
 
                                     <TabsContent value="links" className="mt-0 space-y-4 pb-8">
                                         {org.website && (
-                                            <a href={org.website} target="_blank" rel="noopener" className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors group">
+                                            <a href={org.website} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors group">
                                                 <div className="flex items-center gap-3">
                                                     <Globe className="h-5 w-5 text-primary" />
-                                                    <div>
-                                                        <p className="text-sm font-bold">Sitio Web</p>
-                                                        <p className="text-xs text-muted-foreground">Visitar sitio oficial</p>
-                                                    </div>
+                                                    <p className="text-sm font-bold">Sitio Web Oficial</p>
                                                 </div>
                                                 <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                             </a>
                                         )}
-                                        {org.linkedinUrl && (
-                                            <a href={org.linkedinUrl} target="_blank" rel="noopener" className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors group">
+                                        
+                                        {org.socialMedia?.linkedin && (
+                                            <a href={org.socialMedia.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors group">
                                                 <div className="flex items-center gap-3">
                                                     <Linkedin className="h-5 w-5 text-blue-600" />
-                                                    <div>
-                                                        <p className="text-sm font-bold">LinkedIn</p>
-                                                        <p className="text-xs text-muted-foreground">Perfil de la empresa</p>
-                                                    </div>
+                                                    <p className="text-sm font-bold">LinkedIn</p>
                                                 </div>
                                                 <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-blue-600 transition-colors" />
                                             </a>
                                         )}
-                                        {org.contactEmail && (
+
+                                        {org.mail && (
                                             <div className="flex items-center gap-3 p-4 rounded-xl border bg-card">
                                                 <Mail className="h-5 w-5 text-muted-foreground" />
                                                 <div>
-                                                    <p className="text-sm font-bold">Contacto</p>
-                                                    <p className="text-sm">{org.contactEmail}</p>
+                                                    <p className="text-sm font-bold">Email</p>
+                                                    <p className="text-sm">{org.mail}</p>
                                                 </div>
                                             </div>
                                         )}
