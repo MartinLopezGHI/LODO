@@ -18,7 +18,7 @@ import {
 import { toast } from 'sonner';
 import {
     Save, Plus, Edit, Loader2, X, Globe, Linkedin, Instagram, Mail, Phone, Info, LayoutGrid,
-    Database, ShieldCheck, Clock, Hash, Navigation
+    Database, ShieldCheck, Clock, Hash, Navigation, Youtube, Twitter, Music, Facebook, X as XIcon
 } from 'lucide-react';
 
 export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }) {
@@ -308,18 +308,33 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             {/* Aplicamos la paleta de identidad visual LODO: Fondo Gris Clarito #f4f4f5 */}
-            <DialogContent className="sm:max-w-[850px] h-[90vh] p-0 flex flex-col overflow-hidden border-none shadow-2xl bg-[#f4f4f5] text-[#59595B]">
-                <DialogHeader className="p-8 bg-white border-b border-gray-200 relative">
+            <DialogContent className="fixed left-[50%] top-[56%] z-[9999] w-[95vw] max-w-[850px] h-[80vh] translate-x-[-50%] translate-y-[-50%] border-none shadow-2xl rounded-[3rem] bg-white overflow-hidden flex flex-col">
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    @keyframes border-walking {
+                        0% { background-position: 0% 50%; }
+                        100% { background-position: 200% 50%; }
+                    }
+                    .animated-type-border-hover:hover {
+                        position: relative;
+                        border: 1px solid transparent !important;
+                        background: padding-box linear-gradient(white, white),
+                                    border-box linear-gradient(90deg, #6FEA44 0%, #e5e7eb 50%, #6FEA44 100%);
+                        background-size: 200% auto;
+                        animation: border-walking 2s linear infinite;
+                    }
+                `}} />
+                <DialogHeader className="p-2 bg-white border-b border-gray-200 relative">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-[#6FE844]/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 z-0 pointer-events-none"></div>
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="bg-[#6FE844]/20 text-[#6FE844] p-3 rounded-2xl border border-[#6FE844]/20">
-                            {editingOrg ? <Edit className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
+                    <div className="flex items-center gap-3 relative z-10 px-4 py-2">
+                        <div className="bg-[#6FE844]/20 text-[#6FE844] p-1.5 rounded-xl border border-[#6FE844]/20">
+                            {editingOrg ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                         </div>
                         <div>
-                            <DialogTitle className="text-2xl font-black tracking-tight text-[#59595B]">
+                            <DialogTitle className="text-lg font-black tracking-tight text-[#59595B]">
                                 {editingOrg ? `EDITAR ${form.name}` : 'NUEVA ORGANIZACIÓN'}
                             </DialogTitle>
-                            <DialogDescription className="font-medium opacity-60 text-[#59595B]">
+                            <DialogDescription className="text-[10px] font-medium opacity-60 text-[#59595B]">
                                 {editingOrg ? 'Actualiza los campos del relevamiento.' : 'Registra una nueva entidad (ID y Geo generados automáticamente).'}
                             </DialogDescription>
                         </div>
@@ -337,12 +352,12 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                     <h3 className="text-xs font-bold uppercase tracking-widest">Identidad</h3>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Nombre de la Organización *</Label>
-                                    <Input name="name" value={form.name} onChange={handleChange} required placeholder="Nombre oficial" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 focus:ring-1 focus:ring-[#6FE844]/50" />
+                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Nombre de la Organización</Label>
+                                    <Input name="name" value={form.name} onChange={handleChange} required placeholder="Nombre oficial" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FEA44]/50 focus:ring-1 focus:ring-[#6FEA44]/50 rounded-xl" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">URL del Logo (Opcional)</Label>
-                                    <Input name="logoUrl" value={form.logoUrl} onChange={handleChange} placeholder="https://ejemplo.com/logo.png" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 focus:ring-1 focus:ring-[#6FE844]/50" />
+                                    <Input name="logoUrl" value={form.logoUrl} onChange={handleChange} placeholder="https://ejemplo.com/logo.png" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FEA44]/50 focus:ring-1 focus:ring-[#6FEA44]/50 rounded-xl" />
                                 </div>
                             </div>
                             <div className="space-y-4">
@@ -351,8 +366,8 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                     <h3 className="text-xs font-bold uppercase tracking-widest">Propuesta de Valor</h3>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Solución / Lo que hacen *</Label>
-                                    <textarea name="solucion" value={form.solucion} onChange={handleChange} required className="w-full h-[80px] rounded-xl border border-gray-200 bg-white p-4 text-sm outline-none focus:ring-1 focus:ring-[#6FE844]/50 focus:border-[#6FE844]/50 text-[#59595B]" placeholder="Describe brevemente el proyecto..." />
+                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Solución / Lo que hacen</Label>
+                                    <textarea name="solucion" value={form.solucion} onChange={handleChange} required className="w-full h-[80px] rounded-xl border border-gray-200 bg-white p-4 text-sm outline-none focus:ring-1 focus:ring-[#6FEA44]/50 focus:border-[#6FEA44]/50 text-[#59595B]" placeholder="Describe brevemente el proyecto..." />
                                 </div>
                             </div>
                         </section>
@@ -361,11 +376,11 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
 
                         {/* SECCIÓN 2: CATEGORIZACIÓN */}
                         <section className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Vertical *</Label>
+                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Vertical</Label>
                                     <Select value={form.vertical} onValueChange={(v) => handleSelect('vertical', v)}>
-                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11 rounded-xl"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                                         <SelectContent className="bg-white border-gray-200 text-[#59595B]">
                                             {taxonomies.vertical?.map(t => <SelectItem key={t.id} value={t.value} className="hover:bg-gray-100">{t.label}</SelectItem>)}
                                         </SelectContent>
@@ -374,7 +389,7 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                 <div className={`space-y-2 transition-opacity ${form.vertical === 'otra' ? 'opacity-40 pointer-events-none' : ''}`}>
                                     <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Sub-Vertical</Label>
                                     <Select value={form.subVertical} onValueChange={(v) => handleSelect('subVertical', v)} disabled={form.vertical === 'otra'}>
-                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11"><SelectValue placeholder="Opcional..." /></SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11 rounded-xl"><SelectValue placeholder="Opcional..." /></SelectTrigger>
                                         <SelectContent className="bg-white border-gray-200 text-[#59595B]">
                                             {getSubVerticalsForVertical(form.vertical, taxonomies.subvertical).map(t => (
                                                 <SelectItem key={t.id} value={t.value} className="hover:bg-gray-100">{t.label}</SelectItem>
@@ -385,7 +400,7 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                 <div className="space-y-2">
                                     <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Modelo Negocio</Label>
                                     <Select value={form.businessModel} onValueChange={(v) => handleSelect('businessModel', v)}>
-                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11 rounded-xl"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                                         <SelectContent className="bg-white border-gray-200 text-[#59595B]">
                                             {!taxonomies.businessmodel || taxonomies.businessmodel.length === 0 ? (
                                                 <>
@@ -416,9 +431,9 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Tipo de Org *</Label>
+                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Tipo de Organización</Label>
                                     <Select value={form.organizationType} onValueChange={(v) => handleSelect('organizationType', v)}>
-                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11 rounded-xl"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                                         <SelectContent className="bg-white border-gray-200 text-[#59595B]">
                                             {taxonomies.organizationtype?.map(t => <SelectItem key={t.id} value={t.value} className="hover:bg-gray-100">{t.label}</SelectItem>)}
                                         </SelectContent>
@@ -442,9 +457,9 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Estado Salida</Label>
+                                    <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Estado Operativo</Label>
                                     <Select value={form.outcomeStatus} onValueChange={(v) => handleSelect('outcomeStatus', v)}>
-                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11"><SelectValue placeholder="Activa, Adquirida..." /></SelectTrigger>
+                                        <SelectTrigger className="bg-white border-gray-200 text-[#59595B] h-11 rounded-xl"><SelectValue placeholder="Activa, Adquirida..." /></SelectTrigger>
                                         <SelectContent className="bg-white border-gray-200 text-[#59595B]">
                                             {/* Fallback si no hay taxonomía outcome_status */}
                                             {taxonomies.outcomestatus?.map(t => <SelectItem key={t.id} value={t.value} className="hover:bg-gray-100">{t.label}</SelectItem>) || (
@@ -582,9 +597,9 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                         <section className="space-y-4">
                             <h3 className="text-xs font-bold uppercase tracking-widest text-[#6FE844]">Geografía</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <Input name="country" value={form.country} onChange={handleChange} required placeholder="País" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50" />
-                                <Input name="region" value={form.region} onChange={handleChange} placeholder="Provincia (Opcional)" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50" />
-                                <Input name="city" value={form.city} onChange={handleChange} placeholder="Ciudad (Opcional)" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50" />
+                                <Input name="country" value={form.country} onChange={handleChange} required placeholder="País" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
+                                <Input name="region" value={form.region} onChange={handleChange} placeholder="Provincia" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
+                                <Input name="city" value={form.city} onChange={handleChange} placeholder="Ciudad" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
                             </div>
                         </section>
 
@@ -595,9 +610,9 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                             <div className="space-y-4">
                                 <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Canales Directos</Label>
                                 <div className="space-y-3">
-                                    <div className="relative"><Globe className="absolute left-3 top-3 h-4 w-4 text-[#59595B]/50" /><Input name="website" value={form.website} onChange={handleChange} placeholder="Sitio Web" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FE844]/50" /></div>
-                                    <div className="relative"><Mail className="absolute left-3 top-3 h-4 w-4 text-[#59595B]/50" /><Input name="mail" value={form.mail} onChange={handleChange} placeholder="Email de contacto" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FE844]/50" /></div>
-                                    <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-[#59595B]/50" /><Input name="contactPhone" value={form.contactPhone} onChange={handleChange} placeholder="Teléfono de contacto" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FE844]/50" /></div>
+                                    <div className="relative"><Globe className="absolute left-3 top-3 h-4 w-4 text-[#6FEA44]" /><Input name="website" value={form.website} onChange={handleChange} placeholder="Sitio Web" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FEA44]/50 rounded-xl" /></div>
+                                    <div className="relative"><Mail className="absolute left-3 top-3 h-4 w-4 text-[#6FEA44]" /><Input name="mail" value={form.mail} onChange={handleChange} placeholder="Email de contacto" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FEA44]/50 rounded-xl" /></div>
+                                    <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-[#6FEA44]" /><Input name="contactPhone" value={form.contactPhone} onChange={handleChange} placeholder="Teléfono de contacto" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FEA44]/50 rounded-xl" /></div>
                                 </div>
                             </div>
                             <div className="space-y-4">
@@ -611,16 +626,20 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                     {socialMediaList.map((item, index) => (
                                         <div key={index} className="flex gap-2">
                                             <Select value={item.network} onValueChange={(val) => handleUpdateSocialMedia(index, 'network', val)}>
-                                                <SelectTrigger className="w-[130px] bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50">
+                                                <SelectTrigger className="w-[80px] bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FEA44]/50 rounded-xl">
                                                     <SelectValue placeholder="Red" />
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-white border-gray-200 text-[#59595B]">
-                                                    <SelectItem value="linkedin" className="hover:bg-gray-100">LinkedIn</SelectItem>
-                                                    <SelectItem value="instagram" className="hover:bg-gray-100">Instagram</SelectItem>
-                                                    <SelectItem value="x" className="hover:bg-gray-100">X (Twitter)</SelectItem>
-                                                    <SelectItem value="facebook" className="hover:bg-gray-100">Facebook</SelectItem>
-                                                    <SelectItem value="youtube" className="hover:bg-gray-100">YouTube</SelectItem>
-                                                    <SelectItem value="tiktok" className="hover:bg-gray-100">TikTok</SelectItem>
+                                                    <SelectItem value="linkedin" className="hover:bg-gray-100 flex items-center gap-2"><Linkedin className="h-4 w-4 opacity-70" /></SelectItem>
+                                                    <SelectItem value="instagram" className="hover:bg-gray-100 flex items-center gap-2"><Instagram className="h-4 w-4 opacity-70" /></SelectItem>
+                                                    <SelectItem value="x" className="hover:bg-gray-100 flex items-center gap-2"><XIcon className="h-4 w-4 opacity-70" /></SelectItem>
+                                                    <SelectItem value="facebook" className="hover:bg-gray-100 flex items-center gap-2"><Facebook className="h-4 w-4 opacity-70" /></SelectItem>
+                                                    <SelectItem value="youtube" className="hover:bg-gray-100 flex items-center gap-2"><Youtube className="h-4 w-4 opacity-70" /></SelectItem>
+                                                    <SelectItem value="tiktok" className="hover:bg-gray-100 flex items-center gap-2">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 h-4 w-4">
+                                                            <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+                                                        </svg>
+                                                    </SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <Input
@@ -648,10 +667,10 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                     </form>
                 </ScrollArea>
 
-                <DialogFooter className="p-8 border-t border-gray-200 bg-white">
-                    <Button variant="ghost" onClick={onClose} disabled={loading} className="font-bold text-[#59595B] hover:text-[#59595B] hover:bg-gray-100">Cancelar</Button>
-                    <Button form="org-master-form" type="submit" disabled={loading} className="px-10 h-12 rounded-xl font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-[#6FE844]/20 hover:scale-105 active:scale-95 bg-[#6FE844] hover:bg-[#6FE844]/90 text-black">
-                        {loading ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2" />}
+                <DialogFooter className="p-2 border-t border-gray-200 bg-white items-center">
+                    <Button variant="ghost" onClick={onClose} disabled={loading} className="font-bold text-[#59595B] hover:text-[#59595B] hover:bg-white animated-type-border-hover rounded-xl px-5 h-9 text-xs transition-all">Cancelar</Button>
+                    <Button form="org-master-form" type="submit" disabled={loading} className="px-6 h-9 rounded-xl font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#6FE844]/20 hover:scale-105 active:scale-95 bg-[#6FE844] hover:bg-[#59595B] hover:text-[#6FEA44] text-[#59595B] text-xs duration-300">
+                        {loading ? <Loader2 className="animate-spin h-3 w-3 mr-2" /> : <Save className="h-3 w-3 mr-2" />}
                         {editingOrg ? 'Guardar Cambios' : 'Registrar Startup'}
                     </Button>
                 </DialogFooter>

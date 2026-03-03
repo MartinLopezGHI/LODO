@@ -1,3 +1,5 @@
+@import 'leaflet/dist/leaflet.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -38,7 +40,6 @@
 }
 
 /* Conservamos tus estilos de Leaflet para que el mapa no se rompa */
-@import 'leaflet/dist/leaflet.css';
 
 .leaflet-container {
   @apply h-full w-full rounded-lg;

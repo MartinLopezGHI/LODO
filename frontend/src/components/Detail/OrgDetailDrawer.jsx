@@ -15,14 +15,18 @@ import { ScrollArea } from '../ui/scroll-area';
 import { fetchOrganizationById } from '../../services/api';
 
 export default function OrgDetailDrawer({ orgId, onClose }) {
-    // Colores de marca LODO
     const lodoGreen = "#6FEA44";
     const lodoDark = "#59595B";
-    const lodoLight = "#f4f4f5";
 
     const [org, setOrg] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const formatLabel = (label) => {
+        if (!label) return '';
+        const clean = label.replace(/_/g, ' ').toLowerCase();
+        return clean.charAt(0).toUpperCase() + clean.slice(1);
+    };
 
     useEffect(() => {
         if (!orgId) return;
@@ -41,95 +45,98 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
 
     return (
         <Dialog open={!!orgId} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent hideClose className="sm:max-w-[700px] h-[90vh] md:h-[85vh] p-0 overflow-hidden flex flex-col gap-0 border-none shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] rounded-[3rem]" style={{ backgroundColor: '#fff' }}>
+            <DialogContent hideClose className="fixed left-[50%] top-[52%] z-[9999] w-[95vw] max-w-[700px] h-[80vh] translate-x-[-50%] translate-y-[-45%] border-none shadow-2xl rounded-[3rem] bg-white overflow-hidden flex flex-col">
+
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    @keyframes border-walking {
+                        0% { background-position: 0% 50%; }
+                        100% { background-position: 200% 50%; }
+                    }
+                    @keyframes pulse-dot {
+                        0% { transform: scale(0.9); opacity: 0.5; background-color: #e5e7eb; }
+                        50% { transform: scale(1.1); opacity: 1; background-color: #6FEA44; }
+                        100% { transform: scale(0.9); opacity: 0.5; background-color: #e5e7eb; }
+                    }
+                    .animated-type-border {
+                        position: relative;
+                        border: 1px solid transparent !important;
+                        background: linear-gradient(white, white) padding-box,
+                                    linear-gradient(90deg, #6FEA44 0%, #e5e7eb 50%, #6FEA44 100%) border-box;
+                        background-size: 200% auto;
+                        animation: border-walking 4s linear infinite;
+                    }
+                    .active-pulse-dot {
+                        animation: pulse-dot 2s infinite ease-in-out;
+                    }
+                `}} />
+
                 {loading ? (
                     <div className="p-8 space-y-6">
-                        <Skeleton className="h-8 w-3/4" />
-                        <Skeleton className="h-4 w-1/4" />
-                        <div className="flex gap-2">
-                            <Skeleton className="h-6 w-20" />
-                            <Skeleton className="h-6 w-20" />
-                        </div>
-                        <Skeleton className="h-40 w-full" />
-                    </div>
-                ) : error ? (
-                    <div className="p-12 text-center">
-                        <div className="bg-destructive/10 text-destructive p-4 rounded-lg mb-4">
-                            Error al cargar detalles: {error}
-                        </div>
-                        <Button onClick={onClose} style={{ backgroundColor: lodoGreen, color: '#000' }}>Cerrar</Button>
+                        <Skeleton className="h-40 w-full rounded-3xl" />
                     </div>
                 ) : org ? (
                     <>
-                        <div
-                            className="h-40 relative overflow-hidden"
-                            style={{ background: `linear-gradient(135deg, ${lodoGreen}20, ${lodoGreen}05, transparent)` }}
-                        >
-                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#59595B 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }} />
+                        {/* HEADER: Ajustado de h-40 a h-24 para subir todo el contenido */}
+                        <div className="h-24 relative overflow-hidden flex-shrink-0" style={{ background: 'linear-gradient(135deg, rgba(111, 234, 68, 0.125), rgba(111, 234, 68, 0.02), transparent)' }}>
+                            <div className="absolute inset-0 opacity-10" style={{ backgroundimage: 'radial-gradient(rgb(89, 89, 91) 0.5px, transparent 0.5px)', backgroundsize: '20px 20px' }}></div>
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={onClose}
-                                className="absolute right-6 top-6 bg-white/40 backdrop-blur-md hover:bg-white transition-all rounded-2xl shadow-sm z-50 h-10 w-10"
+                                className="absolute right-6 top-6 bg-white/40 backdrop-blur-md hover:bg-white transition-all rounded-2xl z-50 h-10 w-10"
                             >
                                 <X className="h-5 w-5" style={{ color: lodoDark }} />
                             </Button>
                         </div>
 
-                        <div className="px-10 -mt-12 relative z-10 flex flex-col flex-1 min-h-0 bg-white rounded-t-[3rem]">
-                            <div className="bg-white p-6 rounded-[2rem] shadow-2xl border-4 border-white mb-6 inline-flex self-start -mt-10">
-                                {org.logoUrl ? (
-                                    <img src={org.logoUrl} alt={org.name} className="h-16 w-16 object-contain" />
-                                ) : (
-                                    <Globe className="h-16 w-16" style={{ color: lodoGreen }} />
-                                )}
+                        {/* CONTENIDO: Mantiene el -mt-16 para que el logo y los badges queden bien posicionados sobre el header corto */}
+                        <div className="px-10 flex flex-col flex-1 min-h-0 bg-white rounded-t-[3rem] relative z-20 -mt-16">
+                            <div className="flex flex-row items-end gap-6 mb-6">
+                                <div className="bg-white p-4 rounded-[2rem] shadow-2xl border-4 border-white -mt-10 overflow-hidden w-28 h-28 flex items-center justify-center flex-shrink-0 relative z-30">
+                                    {org.logoUrl ? <img src={org.logoUrl} alt={org.name} className="max-h-full max-w-full object-contain" /> : <Globe className="h-10 w-10 opacity-20" />}
+                                </div>
+
+                                <div className="flex flex-col pb-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="animated-type-border text-[9px] uppercase font-black tracking-[0.2em] px-3 h-6 flex items-center rounded-lg" style={{ color: lodoDark }}>
+                                            {formatLabel(org.organizationType)}
+                                        </div>
+                                        <Badge variant="secondary" className="text-[9px] uppercase font-black tracking-[0.2em] px-3 h-6 rounded-lg border-none" style={{ backgroundColor: `${lodoGreen}15`, color: '#2DA01D' }}>
+                                            {formatLabel(org.vertical)}
+                                        </Badge>
+                                    </div>
+                                    <DialogTitle className="text-3xl font-black tracking-tighter leading-none" style={{ color: lodoDark }}>{org.name}</DialogTitle>
+                                    <DialogDescription className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 mt-3" style={{ color: lodoDark }}>
+                                        <MapPin className="h-3.5 w-3.5" style={{ color: lodoGreen }} />
+                                        {org.country}{org.region ? `, ${formatLabel(org.region)}` : ''}{org.city ? ` · ${formatLabel(org.city)}` : ''}
+                                    </DialogDescription>
+                                </div>
                             </div>
 
-                            <DialogHeader className="mb-8">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <Badge variant="outline" className="text-[10px] uppercase font-black tracking-[0.2em] px-3 h-6 rounded-lg" style={{ color: lodoDark, borderColor: '#59595B20' }}>{org.organizationType}</Badge>
-                                    <Badge variant="secondary" className="text-[10px] uppercase font-black tracking-[0.2em] px-3 h-6 rounded-lg border-none" style={{ backgroundColor: `${lodoGreen}15`, color: '#2DA01D' }}>
-                                        {org.vertical}
-                                    </Badge>
-                                </div>
-                                <DialogTitle className="text-4xl font-black tracking-tighter mb-2" style={{ color: lodoDark }}>
-                                    {org.name}
-                                </DialogTitle>
-                                <DialogDescription className="flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-60" style={{ color: lodoDark }}>
-                                    <MapPin className="h-3.5 w-3.5" style={{ color: lodoGreen }} />
-                                    {org.city}, {org.country}
-                                </DialogDescription>
-                            </DialogHeader>
-
                             <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
-                                <TabsList className="w-full justify-start bg-transparent border-b rounded-none px-0 mb-8 gap-10 h-auto pb-0" style={{ borderColor: '#59595B08' }}>
-                                    <TabsTrigger
-                                        value="overview"
-                                        className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 rounded-none px-0 pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all opacity-40 data-[state=active]:opacity-100"
-                                        style={{ '--tw-state-active-border-color': lodoGreen, color: lodoDark }}
-                                    >Resumen</TabsTrigger>
-                                    <TabsTrigger
-                                        value="location"
-                                        className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 rounded-none px-0 pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all opacity-40 data-[state=active]:opacity-100"
-                                        style={{ '--tw-state-active-border-color': lodoGreen, color: lodoDark }}
-                                    >Ubicación</TabsTrigger>
-                                    <TabsTrigger
-                                        value="links"
-                                        className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 rounded-none px-0 pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all opacity-40 data-[state=active]:opacity-100"
-                                        style={{ '--tw-state-active-border-color': lodoGreen, color: lodoDark }}
-                                    >Contacto</TabsTrigger>
+                                <TabsList className="w-full justify-start bg-transparent border-b rounded-none px-0 mb-6 gap-8 h-auto pb-0" style={{ borderColor: '#59595B08' }}>
+                                    {['overview', 'location', 'links'].map((tab) => (
+                                        <TabsTrigger
+                                            key={tab}
+                                            value={tab}
+                                            className="group relative rounded-none px-0 pb-3 text-[9px] font-black uppercase tracking-[0.2em] data-[state=active]:border-b-4 bg-transparent shadow-none border-none outline-none focus-visible:ring-0 opacity-40 data-[state=active]:opacity-100 flex items-center gap-2"
+                                            style={{ '--tw-state-active-border-color': lodoGreen, color: lodoDark }}
+                                        >
+                                            {tab === 'overview' ? 'Resumen' : tab === 'location' ? 'Ubicación' : 'Contacto'}
+                                            <div className="h-1.5 w-1.5 rounded-full active-pulse-dot scale-0 group-data-[state=active]:scale-100 transition-transform" />
+                                        </TabsTrigger>
+                                    ))}
                                 </TabsList>
 
-                                <ScrollArea className="flex-1 px-1">
+                                <ScrollArea className="flex-1 pr-2">
                                     <TabsContent value="overview" className="mt-0 space-y-8 pb-8">
-                                        <section className="bg-[#f4f4f5] p-8 rounded-[2rem] border border-[#59595B05]">
-                                            <div className="flex items-center gap-3 mb-6" style={{ color: lodoDark }}>
-                                                <div className="h-6 w-1 bg-[#6FEA44] rounded-full" />
-                                                <h4 className="text-[10px] font-black uppercase tracking-[0.25em]">Sobre la Solución</h4>
+                                        <section className="bg-[#f4f4f5] p-6 rounded-[2rem] border border-[#59595B05]">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="h-5 w-1 bg-[#6FEA44] rounded-full" />
+                                                <h4 className="text-[9px] font-black uppercase tracking-[0.25em]" style={{ color: lodoDark }}>Sobre la Solución</h4>
                                             </div>
-                                            <p className="text-sm leading-relaxed whitespace-pre-wrap font-bold opacity-70" style={{ color: lodoDark }}>
-                                                {org.solucion || 'Sin descripción disponible.'}
-                                            </p>
+                                            <p className="text-xs leading-relaxed font-bold opacity-70" style={{ color: lodoDark }}>{org.solucion}</p>
                                         </section>
 
                                         <Separator style={{ backgroundColor: `${lodoDark}10` }} />
@@ -142,12 +149,12 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                                 </div>
                                                 <div className="space-y-6">
                                                     <div className="bg-white p-5 rounded-2xl border border-[#59595B05] shadow-sm">
-                                                        <p className="text-[9px] font-black uppercase mb-1 opacity-40" style={{ color: lodoDark }}>Etapa Actual</p>
-                                                        <p className="text-sm font-black tracking-tight" style={{ color: lodoDark }}>{org.estadioActual || org.estadio_actual || '-'}</p>
+                                                        <p className="text-[9px] font-black uppercase mb-1 opacity-40">Etapa Actual</p>
+                                                        <p className="text-sm font-black tracking-tight" style={{ color: lodoDark }}>{formatLabel(org.estadioActual || org.estadio_actual)}</p>
                                                     </div>
                                                     <div className="bg-white p-5 rounded-2xl border border-[#59595B05] shadow-sm">
-                                                        <p className="text-[9px] font-black uppercase mb-1 opacity-40" style={{ color: lodoDark }}>Estado Operativo</p>
-                                                        <p className="text-sm font-black tracking-tight capitalize" style={{ color: lodoDark }}>{org.outcomeStatus || org.outcome_status || '-'}</p>
+                                                        <p className="text-[9px] font-black uppercase mb-1 opacity-40">Estado Operativo</p>
+                                                        <p className="text-sm font-black tracking-tight" style={{ color: lodoDark }}>{formatLabel(org.outcomeStatus || org.outcome_status)}</p>
                                                     </div>
                                                 </div>
                                             </section>
@@ -158,12 +165,12 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Atributos</h4>
                                                 </div>
                                                 <div className="flex flex-wrap gap-2.5">
-                                                    {(org.badges || org.badges || []).map((badge, i) => (
-                                                        <Badge key={i} variant="secondary" className="text-[9px] font-black uppercase tracking-widest h-7 px-3 rounded-lg border-none" style={{ backgroundColor: '#f4f4f5', color: lodoDark }}>{badge}</Badge>
+                                                    {(org.badges || []).map((badge, i) => (
+                                                        <Badge key={i} variant="secondary" className="text-[9px] font-black uppercase tracking-widest h-7 px-3 rounded-lg border-none" style={{ backgroundColor: '#f4f4f5', color: lodoDark }}>{formatLabel(badge)}</Badge>
                                                     ))}
                                                     {org.founders?.length > 0 && (
                                                         <div className="w-full mt-6 bg-white p-5 rounded-2xl border border-[#59595B05] shadow-sm">
-                                                            <p className="text-[9px] font-black uppercase mb-1 opacity-40" style={{ color: lodoDark }}>Fundadores</p>
+                                                            <p className="text-[9px] font-black uppercase mb-1 opacity-40">Fundadores</p>
                                                             <p className="text-sm font-black tracking-tight leading-relaxed" style={{ color: lodoDark }}>{org.founders.join(', ')}</p>
                                                         </div>
                                                     )}
@@ -173,14 +180,14 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                     </TabsContent>
 
                                     <TabsContent value="location" className="mt-0 space-y-6 pb-8">
-                                        <div className="rounded-[2rem] border bg-white p-10 space-y-6 shadow-xl" style={{ borderColor: '#59595B08' }}>
-                                            <div className="flex items-start gap-5">
-                                                <div className="p-4 rounded-2xl shadow-inner" style={{ backgroundColor: `${lodoGreen}10` }}>
-                                                    <MapPin className="h-7 w-7" style={{ color: lodoGreen }} />
+                                        <div className="rounded-[2rem] border bg-white p-7 space-y-4 shadow-xl" style={{ borderColor: '#59595B08' }}>
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-3 rounded-2xl shadow-inner" style={{ backgroundColor: `${lodoGreen}10` }}>
+                                                    <MapPin className="h-5 w-5" style={{ color: lodoGreen }} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-black text-3xl tracking-tighter" style={{ color: lodoDark }}>{org.city || 'Ubicación'}</h4>
-                                                    <p className="text-xs font-black uppercase tracking-[0.2em] opacity-40 mt-1" style={{ color: lodoDark }}>{org.region ? `${org.region}, ` : ''}{org.country}</p>
+                                                    <h4 className="font-black text-xl tracking-tighter" style={{ color: lodoDark }}>{org.city || 'Ubicación'}</h4>
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 mt-0.5" style={{ color: lodoDark }}>{org.region ? `${formatLabel(org.region)}, ` : ''}{org.country}</p>
                                                 </div>
                                             </div>
                                             {org.lat && org.lng && (
@@ -193,37 +200,41 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
 
                                     <TabsContent value="links" className="mt-0 space-y-4 pb-8">
                                         {org.website && (
-                                            <a href={org.website} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-6 rounded-[1.5rem] border bg-white hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 group shadow-sm" style={{ borderColor: '#59595B05' }}>
-                                                <div className="flex items-center gap-5">
-                                                    <div className="p-3 rounded-xl bg-[#6FEA4410]">
-                                                        <Globe className="h-6 w-6" style={{ color: lodoGreen }} />
+                                            <a href={org.website} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-5 rounded-[1.5rem] border bg-white hover:shadow-lg transition-all group" style={{ borderColor: '#59595B05' }}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-2.5 rounded-xl bg-[#6FEA4410]"><Globe className="h-5 w-5" style={{ color: lodoGreen }} /></div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5" style={{ color: lodoDark }}>Sitio Web Oficial</p>
+                                                        <p className="text-[10px] font-medium opacity-40 lowercase" style={{ color: lodoDark }}>{org.website.replace(/^https?:\/\//, '')}</p>
                                                     </div>
-                                                    <p className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: lodoDark }}>Sitio Web Oficial</p>
                                                 </div>
-                                                <ExternalLink className="h-5 w-5 opacity-20 group-hover:opacity-100 transition-opacity" style={{ color: lodoDark }} />
+                                                <ExternalLink className="h-4 w-4 opacity-20 group-hover:opacity-100" />
                                             </a>
                                         )}
-
                                         {org.socialMedia?.linkedin && (
-                                            <a href={org.socialMedia.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-6 rounded-[1.5rem] border bg-white hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 group shadow-sm" style={{ borderColor: '#59595B05' }}>
-                                                <div className="flex items-center gap-5">
-                                                    <div className="p-3 rounded-xl bg-[#0077b510]">
-                                                        <Linkedin className="h-6 w-6 text-[#0077b5]" />
-                                                    </div>
-                                                    <p className="text-xs font-black uppercase tracking-[0.2em]" style={{ color: lodoDark }}>Perfil de LinkedIn</p>
+                                            <a href={org.socialMedia.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-5 rounded-[1.5rem] border bg-white hover:shadow-lg transition-all group" style={{ borderColor: '#59595B05' }}>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-2.5 rounded-xl bg-[#6FEA4410]"><Linkedin className="h-5 w-5" style={{ color: lodoGreen }} /></div>
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: lodoDark }}>LinkedIn</p>
                                                 </div>
-                                                <ExternalLink className="h-5 w-5 opacity-20 group-hover:opacity-100 transition-opacity" style={{ color: lodoDark }} />
+                                                <ExternalLink className="h-4 w-4 opacity-20 group-hover:opacity-100" />
                                             </a>
                                         )}
-
-                                        {org.mail && (
-                                            <div className="flex items-center gap-5 p-6 rounded-[1.5rem] border bg-[#f4f4f5]/50 shadow-sm" style={{ borderColor: '#59595B05' }}>
-                                                <div className="p-3 rounded-xl bg-[#59595B10]">
-                                                    <Mail className="h-6 w-6 opacity-40" style={{ color: lodoDark }} />
-                                                </div>
+                                        {org.contactPhone && (
+                                            <div className="flex items-center gap-4 p-5 rounded-[1.5rem] border bg-white shadow-sm" style={{ borderColor: '#59595B05' }}>
+                                                <div className="p-2.5 rounded-xl bg-[#6FEA4410]"><Phone className="h-5 w-5" style={{ color: lodoGreen }} /></div>
                                                 <div>
-                                                    <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1" style={{ color: lodoDark }}>Correo Electrónico</p>
-                                                    <p className="text-sm font-black tracking-tight" style={{ color: lodoDark }}>{org.mail}</p>
+                                                    <p className="text-[8px] font-black uppercase opacity-40 mb-1">Teléfono</p>
+                                                    <p className="text-xs font-black tracking-tight" style={{ color: lodoDark }}>{org.contactPhone}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {org.mail && (
+                                            <div className="flex items-center gap-4 p-5 rounded-[1.5rem] border bg-white shadow-sm" style={{ borderColor: '#59595B05' }}>
+                                                <div className="p-2.5 rounded-xl bg-[#6FEA4410]"><Mail className="h-5 w-5" style={{ color: lodoGreen }} /></div>
+                                                <div>
+                                                    <p className="text-[8px] font-black uppercase opacity-40 mb-1">Email</p>
+                                                    <p className="text-xs font-black tracking-tight" style={{ color: lodoDark }}>{org.mail}</p>
                                                 </div>
                                             </div>
                                         )}
