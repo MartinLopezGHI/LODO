@@ -1,50 +1,75 @@
-name: CD
+name: CD - Production Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ] # Solo se ejecuta al confirmar cambios en la rama principal
 
 jobs:
-  cd:
+  deploy-backend:
+    name: Build & Deploy Backend
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # Backend
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - name: Google Auth
+        uses: 'google-github-actions/auth@v2'
         with:
-          go-version: "1.22"
+          credentials_json: '${{ secrets.GCP_SA_KEY }}' # El JSON completo que pegaste
 
-      - name: Build Go binary
-        working-directory: backend
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Docker Auth'
+        run: gcloud auth configure-docker southamerica-east1-docker.pkg.dev
+
+      - name: Build and Push Backend
+        # Usamos el hash del commit (${{ github.sha }}) para un versionado inmutable y profesional
         run: |
-          mkdir -p build
-          go build -o build/api ./cmd/api
+          docker build -t southamerica-east1-docker.pkg.dev/probable-anchor-483603-m8/lodo-repo/backend-lodo:${{ github.sha }} ./backend
+          docker push southamerica-east1-docker.pkg.dev/probable-anchor-483603-m8/lodo-repo/backend-lodo:${{ github.sha }}
 
-      # Frontend
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Build frontend
-        working-directory: frontend
+      - name: Deploy to Cloud Run
         run: |
-          npm ci
-          npm run build
+          gcloud run deploy lodo-backend \
+            --image southamerica-east1-docker.pkg.dev/probable-anchor-483603-m8/lodo-repo/backend-lodo:${{ github.sha }} \
+            --region southamerica-east1 \
+            --platform managed \
+            --allow-unauthenticated
 
-      # Artefactos
-      - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-api
-          path: backend/build/api
+  deploy-frontend:
+    name: Build & Deploy Frontend
+    needs: deploy-backend # El front solo se despliega si el back subió correctamente
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
+      - name: Google Auth
+        uses: 'google-github-actions/auth@v2'
         with:
-          name: frontend-build
-          path: frontend/dist
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Docker Auth'
+        run: gcloud auth configure-docker southamerica-east1-docker.pkg.dev
+
+      - name: Build and Push Frontend
+        # Inyectamos la URL de la API y el Token desde los Secretos de GitHub
+        run: |
+          docker build \
+            --build-arg VITE_API_URL=https://lodo-backend-412424314458.southamerica-east1.run.app \
+            --build-arg VITE_ADMIN_TOKEN=${{ secrets.VITE_ADMIN_TOKEN }} \
+            -t southamerica-east1-docker.pkg.dev/probable-anchor-483603-m8/lodo-front-repo/frontend-lodo:${{ github.sha }} \
+            -f frontend/Dockerfile .
+          docker push southamerica-east1-docker.pkg.dev/probable-anchor-483603-m8/lodo-front-repo/frontend-lodo:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy lodo-frontend \
+            --image southamerica-east1-docker.pkg.dev/probable-anchor-483603-m8/lodo-front-repo/frontend-lodo:${{ github.sha }} \
+            --region southamerica-east1 \
+            --platform managed \
+            --allow-unauthenticated
