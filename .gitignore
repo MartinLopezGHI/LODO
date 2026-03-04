@@ -1,61 +1,66 @@
-# Dependencies
+# --- Dependencias y Paquetes ---
 node_modules/
 frontend/node_modules/
+backend/vendor/
+cargadb/venv/
+.venv/
+package-lock.json
+yarn.lock
 
-# Environment / secrets
+# --- Secretos y Configuración (¡CRÍTICO!) ---
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 backend/.env
 frontend/.env
 cargadb/.env
+# Credenciales de Google Cloud
+cargadb/service_account.json
+github-key.json
+# Datos locales de Docker Compose (Base de datos)
+lodo_db_data/
 
-# Build outputs
+# --- Salidas de Compilación (Build) ---
 frontend/dist/
+# Binarios de Go (Windows y Linux)
 backend/*.exe
+backend/main
 *.exe
 bin/
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
 
-# IDE / OS
+# --- IDEs y Sistema Operativo ---
 .idea/
 .vscode/
 .cursor/
 .cursorignore
 *.swp
+*.tmp
 .DS_Store
 Thumbs.db
 
-# Logs
+# --- Logs y Debugging ---
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Go
-backend/vendor/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-cargadb/venv/
-.venv/
-
-# Docker (User request)
-Dockerfile
-Dockerfile.*
-.dockerignore
-
-# Analysis
-analysis_scripts/
-
-# Seguridad: No subir la llave de Google
-cargadb/service_account.json
-
-# Datos: No subir archivos de Excel o CSV
+# --- Datos y Análisis (Específico LODO) ---
+# No subir archivos de Excel o CSV sucios o procesados
 cargadb/excels/1_sucios/*
 cargadb/excels/2_limpios/*
 cargadb/excels/3_usados/*
+analysis_scripts/
 
-# Permitir que Git rastree las carpetas aunque estén vacías
+# Permitir que Git rastree las carpetas aunque estén vacías usando .gitkeep
 !cargadb/excels/1_sucios/.gitkeep
 !cargadb/excels/2_limpios/.gitkeep
 !cargadb/excels/3_usados/.gitkeep
+
+# --- Docker ---
+.docker/

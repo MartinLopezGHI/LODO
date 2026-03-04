@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
+	"log/slog" // <-- Mejora 2: Logs estructurados
 	"net/http"
-	"os" // <--- Paquete necesario para leer variables de entorno
+	"os"
 	"strings"
 
 	"backend/internal/audit"
@@ -17,18 +18,23 @@ import (
 )
 
 func main() {
-	// 1. Cargar configuración (variables de entorno)
+	// Configurar el logger global para escribir en JSON a la salida estándar
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
+	// 1. Cargar configuración
 	cfg := config.Load()
 
-	// 2. Conectar a la base de datos (MariaDB en Cloud SQL)
+	// 2. Conectar a la base de datos
 	db, err := database.Connect(cfg)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("Critical: database connection failed", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("MariaDB connected")
+	slog.Info("MariaDB connected successfully", "host", cfg.DBHost)
 
-	// 3. Inicializar capas del módulo Organizations
+	// 3. Inicializar capas
 	orgRepo := organizations.NewRepository(db)
 	auditRepo := audit.NewRepository(db)
 	taxRepo := taxonomies.NewRepository(db)
@@ -36,24 +42,27 @@ func main() {
 	geocoder := geocoding.NewNominatimClient("LODO-Geocode-MVP")
 	orgService := organizations.NewService(orgRepo, auditRepo, taxRepo, geocoder)
 	orgHandler := organizations.NewHandler(orgService, orgRepo, geocoder)
-
 	taxHandler := taxonomies.NewHandler(taxRepo)
 
-	// Inicializar módulo Auth
 	authRepo := auth.NewRepository(db)
 	authHandler := auth.NewHandler(authRepo)
 
 	// 4. Router HTTP Principal
 	mux := http.NewServeMux()
 
-	// --- RUTAS PÚBLICAS ---
-	publicMux := http.NewServeMux()
-
-	publicMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	// Mejora A: Healthcheck con validación de DB
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if err := db.Ping(); err != nil {
+			slog.Warn("Healthcheck failed: DB unreachable", "error", err)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
+	// --- RUTAS ---
+	publicMux := http.NewServeMux()
 	publicMux.HandleFunc("/public/organizations", orgHandler.ListPublic)
 	publicMux.HandleFunc("/public/organizations/aggregates", orgHandler.Aggregates)
 	publicMux.HandleFunc("/public/organizations/", func(w http.ResponseWriter, r *http.Request) {
@@ -63,24 +72,19 @@ func main() {
 		}
 		orgHandler.GetPublicByID(w, r)
 	})
-
 	publicMux.HandleFunc("/public/taxonomies", taxHandler.ListPublic)
-
 	publicMux.HandleFunc("/auth/login", authHandler.Login)
 	publicMux.HandleFunc("/auth/register", authHandler.Register)
 	publicMux.HandleFunc("/auth/me", authHandler.Me)
 	publicMux.HandleFunc("/auth/logout", authHandler.Logout)
 
-	// --- RUTAS DE ADMINISTRACIÓN ---
 	adminMux := http.NewServeMux()
-
 	adminMux.HandleFunc("/organizations", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
+		if r.Method == http.MethodGet {
 			orgHandler.List(w, r)
-		case http.MethodPost:
+		} else if r.Method == http.MethodPost {
 			orgHandler.Create(w, r)
-		default:
+		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
@@ -112,23 +116,17 @@ func main() {
 		}
 	})
 
-	// 5. Unificación y Middlewares
 	mux.Handle("/public/", publicMux)
 	mux.Handle("/auth/", publicMux)
-	mux.Handle("/health", publicMux)
-
 	mux.Handle("/organizations", httpmw.AuthWithUser(cfg, adminMux))
 	mux.Handle("/organizations/", httpmw.AuthWithUser(cfg, adminMux))
 
-	// --- CONFIGURACIÓN PARA CLOUD RUN ---
-	// Leemos el puerto de la variable de entorno PORT
+	// 5. Servidor
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Puerto por defecto para desarrollo local
+		port = "8080"
 	}
 
-	log.Printf("Server running on port %s", port)
-
-	// Aplicar CORS globalmente y levantar el servidor
+	slog.Info("Server starting", "port", port)
 	log.Fatal(http.ListenAndServe(":"+port, httpmw.CORS(mux)))
 }
