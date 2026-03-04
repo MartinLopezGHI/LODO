@@ -7,25 +7,22 @@ import (
 
 // Normalize limpia y valida los datos de una organización antes de persistirlos.
 func Normalize(org *Organization) error {
-	// 1. Trim en campos de texto obligatorios
+	// 1. Trim en campos de texto obligatorios y opcionales
 	org.ID = strings.TrimSpace(org.ID)
 	org.Name = strings.TrimSpace(org.Name)
-	org.Vertical = strings.TrimSpace(org.Vertical)
 	org.Country = strings.TrimSpace(org.Country)
 	org.Region = strings.TrimSpace(org.Region)
 	org.City = strings.TrimSpace(org.City)
-	org.OrganizationType = strings.TrimSpace(org.OrganizationType)
-	org.OutcomeStatus = strings.TrimSpace(org.OutcomeStatus)
 
 	// 2. Validación de campos mínimos indispensables para existir en la DB
 	if org.Name == "" {
 		return fmt.Errorf("el nombre de la organización es obligatorio")
 	}
-	if org.Vertical == "" {
-		return fmt.Errorf("la vertical de negocio es obligatoria")
-	}
 
 	// 3. Normalizar campos opcionales (Punteros a string)
+	org.Vertical = normalizeOptional(org.Vertical)
+	org.OrganizationType = normalizeOptional(org.OrganizationType)
+	org.OutcomeStatus = normalizeOptional(org.OutcomeStatus)
 	org.Website = normalizeOptional(org.Website)
 	org.SubVertical = normalizeOptional(org.SubVertical)
 	org.EstadioActual = normalizeOptional(org.EstadioActual)
@@ -37,10 +34,12 @@ func Normalize(org *Organization) error {
 	org.BusinessModel = normalizeOptional(org.BusinessModel)
 
 	// --- Lógica de validación para "OTRA / OTRO" ---
-	isVerticalOtra := strings.EqualFold(org.Vertical, "otra") || strings.EqualFold(org.Vertical, "otro")
-	if isVerticalOtra {
-		if org.Notes == nil || len(strings.TrimSpace(*org.Notes)) < 3 {
-			return fmt.Errorf("al seleccionar 'OTRA' como vertical, debe detallar la categoría en el campo de notas")
+	if org.Vertical != nil {
+		isVerticalOtra := strings.EqualFold(*org.Vertical, "otra") || strings.EqualFold(*org.Vertical, "otro")
+		if isVerticalOtra {
+			if org.Notes == nil || len(strings.TrimSpace(*org.Notes)) < 3 {
+				return fmt.Errorf("al seleccionar 'OTRA' como vertical, debe detallar la categoría en el campo de notas")
+			}
 		}
 	}
 
@@ -65,33 +64,15 @@ func Normalize(org *Organization) error {
 }
 
 // ValidateForPublish realiza el checklist corporativo antes de permitir el paso a PUBLISHED.
-// Esta es la función que service.go necesita encontrar.
 func ValidateForPublish(org *Organization) error {
-	if org.Name == "" || org.Vertical == "" || org.Country == "" || org.OrganizationType == "" {
-		return fmt.Errorf("faltan campos geográficos (país) o de categorización obligatorios")
+	if org.Name == "" {
+		return fmt.Errorf("el nombre de la organización es obligatorio para publicar")
 	}
-
-	if org.Solucion == nil || len(*org.Solucion) < 20 {
-		return fmt.Errorf("la solución (descripción) es muy corta (mínimo 20 caracteres para publicar)")
+	if org.Country == "" {
+		return fmt.Errorf("el país es obligatorio para publicar")
 	}
-
-	// Regla: Contacto mínimo (Website o Redes Sociales)
-	hasContact := (org.Website != nil && *org.Website != "")
-	if org.SocialMedia != nil {
-		if li, ok := org.SocialMedia["linkedin"]; ok && strings.TrimSpace(li) != "" {
-			hasContact = true
-		}
-	}
-
-	if !hasContact {
-		return fmt.Errorf("se requiere al menos un enlace de contacto (Sitio Web o LinkedIn) para publicar")
-	}
-
-	// Regla especial: Si es Startup -> Estadio Actual es obligatorio
-	if strings.EqualFold(org.OrganizationType, "Startup") {
-		if org.EstadioActual == nil || *org.EstadioActual == "" {
-			return fmt.Errorf("el estadioActual es obligatorio para organizaciones de tipo Startup")
-		}
+	if org.Website == nil || *org.Website == "" {
+		return fmt.Errorf("el sitio web es obligatorio para publicar")
 	}
 
 	return nil

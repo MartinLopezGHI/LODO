@@ -201,8 +201,8 @@ func (s *Service) ValidateTaxonomies(org *Organization) error {
 	}
 
 	// 1. Validar Vertical (Llave SQL: 'vertical')
-	if org.Vertical != "" && !grouped["vertical"][org.Vertical] {
-		return fmt.Errorf("vertical inválida: %s", org.Vertical)
+	if org.Vertical != nil && *org.Vertical != "" && !grouped["vertical"][*org.Vertical] {
+		return fmt.Errorf("vertical inválida: %s", *org.Vertical)
 	}
 
 	// 2. Validar Sub-Vertical (Llave SQL: 'subvertical')
@@ -236,8 +236,8 @@ func (s *Service) ValidateTaxonomies(org *Organization) error {
 	}
 
 	// 5. Validar Tipo de Organización (Llave SQL: 'organizationtype')
-	if org.OrganizationType != "" && !grouped["organizationtype"][org.OrganizationType] {
-		return fmt.Errorf("tipo de organización inválido: %s", org.OrganizationType)
+	if org.OrganizationType != nil && *org.OrganizationType != "" && !grouped["organizationtype"][*org.OrganizationType] {
+		return fmt.Errorf("tipo de organización inválido: %s", *org.OrganizationType)
 	}
 
 	// 6. Validar Badges (Llave SQL: 'badges') - Flexible: Si no está en taxonomía, se permite igual

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os" // <--- Paquete necesario para leer variables de entorno
 	"strings"
 
 	"backend/internal/audit"
@@ -19,7 +20,7 @@ func main() {
 	// 1. Cargar configuración (variables de entorno)
 	cfg := config.Load()
 
-	// 2. Conectar a la base de datos (MariaDB limpia con 001_init.sql)
+	// 2. Conectar a la base de datos (MariaDB en Cloud SQL)
 	db, err := database.Connect(cfg)
 	if err != nil {
 		log.Fatal(err)
@@ -27,13 +28,12 @@ func main() {
 
 	log.Println("MariaDB connected")
 
-	// 3. Inicializar capas del módulo Organizations (Inyección de dependencias)
+	// 3. Inicializar capas del módulo Organizations
 	orgRepo := organizations.NewRepository(db)
 	auditRepo := audit.NewRepository(db)
 	taxRepo := taxonomies.NewRepository(db)
-	
+
 	geocoder := geocoding.NewNominatimClient("LODO-Geocode-MVP")
-	// Ahora (Pasando el geocoder que ya tienes instanciado):
 	orgService := organizations.NewService(orgRepo, auditRepo, taxRepo, geocoder)
 	orgHandler := organizations.NewHandler(orgService, orgRepo, geocoder)
 
@@ -54,11 +54,9 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	// Endpoints públicos alineados a la nueva estructura
 	publicMux.HandleFunc("/public/organizations", orgHandler.ListPublic)
 	publicMux.HandleFunc("/public/organizations/aggregates", orgHandler.Aggregates)
 	publicMux.HandleFunc("/public/organizations/", func(w http.ResponseWriter, r *http.Request) {
-		// Evitar colisión con la ruta base
 		if r.URL.Path == "/public/organizations/" {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
@@ -68,16 +66,14 @@ func main() {
 
 	publicMux.HandleFunc("/public/taxonomies", taxHandler.ListPublic)
 
-	// Rutas de Autenticación
 	publicMux.HandleFunc("/auth/login", authHandler.Login)
 	publicMux.HandleFunc("/auth/register", authHandler.Register)
 	publicMux.HandleFunc("/auth/me", authHandler.Me)
 	publicMux.HandleFunc("/auth/logout", authHandler.Logout)
 
-	// --- RUTAS DE ADMINISTRACIÓN (Protegidas) ---
+	// --- RUTAS DE ADMINISTRACIÓN ---
 	adminMux := http.NewServeMux()
 
-	// Listar y Crear (Rutas base)
 	adminMux.HandleFunc("/organizations", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -89,11 +85,8 @@ func main() {
 		}
 	})
 
-	// Detalle, Ciclo de vida y Geocoding
 	adminMux.HandleFunc("/organizations/", func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		
-		// Enrutamiento basado en sufijos de acción
 		switch {
 		case strings.HasSuffix(path, "/review"):
 			orgHandler.SubmitForReview(w, r)
@@ -106,11 +99,10 @@ func main() {
 		case strings.HasSuffix(path, "/coordinates"):
 			orgHandler.PatchCoordinates(w, r)
 		default:
-			// CRUD Estándar por ID
 			switch r.Method {
 			case http.MethodGet:
 				orgHandler.GetByID(w, r)
-			case http.MethodPut, http.MethodPost: // Soporte para ambos para Update
+			case http.MethodPut, http.MethodPost:
 				orgHandler.Update(w, r)
 			case http.MethodDelete:
 				orgHandler.Delete(w, r)
@@ -121,16 +113,22 @@ func main() {
 	})
 
 	// 5. Unificación y Middlewares
-	// Aplicamos CORS a todo y Auth solo a /organizations
 	mux.Handle("/public/", publicMux)
 	mux.Handle("/auth/", publicMux)
 	mux.Handle("/health", publicMux)
-	
-	// El middleware AuthWithUser protege el acceso administrativo
+
 	mux.Handle("/organizations", httpmw.AuthWithUser(cfg, adminMux))
 	mux.Handle("/organizations/", httpmw.AuthWithUser(cfg, adminMux))
 
-	log.Println("Server running on :8080")
-	// Aplicar el middleware de CORS globalmente
-	log.Fatal(http.ListenAndServe(":8080", httpmw.CORS(mux)))
+	// --- CONFIGURACIÓN PARA CLOUD RUN ---
+	// Leemos el puerto de la variable de entorno PORT
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Puerto por defecto para desarrollo local
+	}
+
+	log.Printf("Server running on port %s", port)
+
+	// Aplicar CORS globalmente y levantar el servidor
+	log.Fatal(http.ListenAndServe(":"+port, httpmw.CORS(mux)))
 }

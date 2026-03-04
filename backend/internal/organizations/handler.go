@@ -114,7 +114,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID requerido para eliminar", http.StatusBadRequest)
 		return
 	}
-	
+
 	force := r.URL.Query().Get("force") == "true"
 
 	if err := h.Service.Delete(id, force); err != nil {
@@ -210,10 +210,20 @@ func (h *Handler) Aggregates(w http.ResponseWriter, r *http.Request) {
 // --- GEOPOSICIONAMIENTO ---
 
 func (h *Handler) Geocode(w http.ResponseWriter, r *http.Request) {
-	id := extractActionID(r.URL.Path, "geocode")
+	id := strings.TrimPrefix(r.URL.Path, "/public/organizations/geocode/")
+	if id == "" {
+		id = strings.TrimPrefix(r.URL.Path, "/organizations/geocode/")
+	}
+	id = strings.TrimPrefix(id, "/") // Ensure no leading slash
+
+	if id == "" {
+		http.Error(w, "ID missing", http.StatusBadRequest)
+		return
+	}
+
 	org, err := h.Repo.FindByID(id)
 	if err != nil {
-		http.Error(w, "Not found", http.StatusNotFound)
+		http.Error(w, "Not found: "+id, http.StatusNotFound)
 		return
 	}
 
@@ -265,14 +275,14 @@ func (h *Handler) PatchCoordinates(w http.ResponseWriter, r *http.Request) {
 
 func extractID(path string) string {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
-	
+
 	// Buscamos dinámicamente el segmento después de "organizations"
 	for i, p := range parts {
 		if p == "organizations" && i+1 < len(parts) {
 			id := parts[i+1]
 			// Validamos que no sea una palabra clave de acción
 			reserved := map[string]bool{
-				"review": true, "publish": true, "archive": true, 
+				"review": true, "publish": true, "archive": true,
 				"geocode": true, "coordinates": true, "aggregates": true,
 			}
 			if reserved[id] {

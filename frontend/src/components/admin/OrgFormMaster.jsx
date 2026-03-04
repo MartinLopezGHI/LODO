@@ -230,19 +230,10 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
         e.preventDefault();
         setLoading(true);
 
-        // Validación manual de campos obligatorios marcados con *
+        // Validación manual de campos obligatorios: Solo Nombre, País y Sitio Web
         if (!form.name?.trim()) { toast.error("El nombre es obligatorio"); setLoading(false); return; }
-        if (!form.solucion?.trim()) { toast.error("La propuesta de valor es obligatoria"); setLoading(false); return; }
-        if (!form.vertical) { toast.error("La vertical es obligatoria"); setLoading(false); return; }
-        if (!form.organizationType) { toast.error("El tipo de organización es obligatorio"); setLoading(false); return; }
         if (!form.country?.trim()) { toast.error("El país es obligatorio"); setLoading(false); return; }
-
-        // Validar 'notes' si vertical o subvertical es "OTRA"
-        if ((form.vertical === 'otra' || form.subVertical === 'otra_especificar') && !form.notes.trim()) {
-            toast.error("Por favor, especifica el rubro en Notas Adicionales.");
-            setLoading(false);
-            return;
-        }
+        if (!form.website?.trim()) { toast.error("El sitio web es obligatorio"); setLoading(false); return; }
 
         // Convertir array de UI de vuelta al mapa (objeto) esperado por Backend
         const socialMediaMap = {};
@@ -367,7 +358,7 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Solución / Lo que hacen</Label>
-                                    <textarea name="solucion" value={form.solucion} onChange={handleChange} required className="w-full h-[80px] rounded-xl border border-gray-200 bg-white p-4 text-sm outline-none focus:ring-1 focus:ring-[#6FEA44]/50 focus:border-[#6FEA44]/50 text-[#59595B]" placeholder="Describe brevemente el proyecto..." />
+                                    <textarea name="solucion" value={form.solucion} onChange={handleChange} className="w-full h-[80px] rounded-xl border border-gray-200 bg-white p-4 text-sm outline-none focus:ring-1 focus:ring-[#6FEA44]/50 focus:border-[#6FEA44]/50 text-[#59595B]" placeholder="Describe brevemente el proyecto..." />
                                 </div>
                             </div>
                         </section>
@@ -448,7 +439,6 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                                         name="notes"
                                         value={form.notes}
                                         onChange={handleChange}
-                                        required
                                         placeholder="Escribe de qué trata el proyecto..."
                                         className="bg-white border-[#6FE844]/30 text-[#59595B]"
                                     />
@@ -610,7 +600,7 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                             <div className="space-y-4">
                                 <Label className="text-[11px] font-bold uppercase opacity-60 text-[#59595B]">Canales Directos</Label>
                                 <div className="space-y-3">
-                                    <div className="relative"><Globe className="absolute left-3 top-3 h-4 w-4 text-[#6FEA44]" /><Input name="website" value={form.website} onChange={handleChange} placeholder="Sitio Web" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FEA44]/50 rounded-xl" /></div>
+                                    <div className="relative"><Globe className="absolute left-3 top-3 h-4 w-4 text-[#6FEA44]" /><Input name="website" value={form.website} onChange={handleChange} required placeholder="Sitio Web" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FEA44]/50 rounded-xl" /></div>
                                     <div className="relative"><Mail className="absolute left-3 top-3 h-4 w-4 text-[#6FEA44]" /><Input name="mail" value={form.mail} onChange={handleChange} placeholder="Email de contacto" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FEA44]/50 rounded-xl" /></div>
                                     <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-[#6FEA44]" /><Input name="contactPhone" value={form.contactPhone} onChange={handleChange} placeholder="Teléfono de contacto" className="pl-10 h-11 bg-white border-gray-200 text-[#59595B] focus:border-[#6FEA44]/50 rounded-xl" /></div>
                                 </div>

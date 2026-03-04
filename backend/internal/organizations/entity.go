@@ -17,24 +17,24 @@ type Organization struct {
 	ID               string             `json:"id"`
 	Name             string             `json:"name"`
 	Website          *string            `json:"website,omitempty"`
-	Vertical         string             `json:"vertical"`             // Ej: agtech, biotech_bioinputs
-	SubVertical      *string            `json:"subVertical,omitempty"`  // Ej: digital_ag, crop_genomics
+	Vertical         *string            `json:"vertical,omitempty"` // Opcional
+	SubVertical      *string            `json:"subVertical,omitempty"`
 	Country          string             `json:"country"`
 	Region           string             `json:"region"`
 	City             string             `json:"city"`
 	LogoURL          *string            `json:"logoUrl,omitempty"`
-	EstadioActual    *string            `json:"estadioActual,omitempty"` // Etapa de Madurez
-	Solucion         *string            `json:"solucion,omitempty"`      // Antes Description
-	Mail             *string            `json:"mail,omitempty"`          // Antes ContactEmail
-	SocialMedia      map[string]string  `json:"socialMedia,omitempty"`   // Objeto flexible (LinkedIn, IG, etc.)
+	EstadioActual    *string            `json:"estadioActual,omitempty"`
+	Solucion         *string            `json:"solucion,omitempty"`
+	Mail             *string            `json:"mail,omitempty"`
+	SocialMedia      map[string]string  `json:"socialMedia,omitempty"`
 	ContactPhone     *string            `json:"contactPhone,omitempty"`
-	Founders         []string           `json:"founders,omitempty"`      // Lista de fundadores
-	Founded          *int               `json:"founded,omitempty"`       // Año de fundación
-	OrganizationType string             `json:"organizationType"`        // Startup, Inversor, etc.
-	OutcomeStatus    string             `json:"outcomeStatus"`           // Activa, Adquirida, etc.
-	BusinessModel    *string            `json:"businessModel,omitempty"` // B2B, B2C, etc.
-	Badges           []string           `json:"badges,omitempty"`        // Unicornio, B-Corp, etc.
-	Notes            *string            `json:"notes,omitempty"`         // Obligatorio si Vertical es "OTRA"
+	Founders         []string           `json:"founders,omitempty"`
+	Founded          *int               `json:"founded,omitempty"`
+	OrganizationType *string            `json:"organizationType,omitempty"` // Opcional
+	OutcomeStatus    *string            `json:"outcomeStatus,omitempty"`    // Opcional
+	BusinessModel    *string            `json:"businessModel,omitempty"`
+	Badges           []string           `json:"badges,omitempty"` // Unicornio, B-Corp, etc.
+	Notes            *string            `json:"notes,omitempty"`  // Obligatorio si Vertical es "OTRA"
 	Status           OrganizationStatus `json:"status"`
 	Lat              *float64           `json:"lat,omitempty"`
 	Lng              *float64           `json:"lng,omitempty"`

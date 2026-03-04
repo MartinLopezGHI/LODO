@@ -8,11 +8,13 @@ frontend/node_modules/
 .env.*.local
 backend/.env
 frontend/.env
+cargadb/.env
 
 # Build outputs
 frontend/dist/
 backend/*.exe
 *.exe
+bin/
 
 # IDE / OS
 .idea/
@@ -29,6 +31,18 @@ npm-debug.log*
 
 # Go
 backend/vendor/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+cargadb/venv/
+.venv/
+
+# Docker (User request)
+Dockerfile
+Dockerfile.*
+.dockerignore
 
 # Analysis
 analysis_scripts/

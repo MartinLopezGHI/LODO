@@ -1,0 +1,15 @@
+# Conectividad Google Cloud
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+
+# Procesamiento y DB
+pandas
+sqlalchemy
+mysql-connector-python
+python-dotenv
+openpyxl
+
+# Orquestación de Notebooks
+nbconvert
+ipykernel

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -34,11 +35,43 @@ func NewNominatimClient(userAgent string) *NominatimClient {
 }
 
 func (c *NominatimClient) Geocode(city, region, country string) (float64, float64, error) {
-	query := fmt.Sprintf("%s, %s, %s", city, region, country)
-	if region == "" {
-		query = fmt.Sprintf("%s, %s", city, country)
+	city = cleanLoc(city)
+	region = cleanLoc(region)
+	country = cleanLoc(country)
+
+	// Lista de intentos por orden de especificidad
+	var attempts []string
+
+	if city != "" && region != "" && country != "" {
+		attempts = append(attempts, fmt.Sprintf("%s, %s, %s", city, region, country))
+	}
+	if city != "" && country != "" {
+		attempts = append(attempts, fmt.Sprintf("%s, %s", city, country))
+	}
+	if region != "" && country != "" {
+		attempts = append(attempts, fmt.Sprintf("%s, %s", region, country))
+	}
+	if country != "" {
+		attempts = append(attempts, country)
 	}
 
+	if len(attempts) == 0 {
+		return 0, 0, fmt.Errorf("no hay datos suficientes para geocodificar")
+	}
+
+	var lastErr error
+	for _, query := range attempts {
+		lat, lng, err := c.geocodeWithQuery(query)
+		if err == nil {
+			return lat, lng, nil
+		}
+		lastErr = err
+	}
+
+	return 0, 0, fmt.Errorf("fallaron todos los intentos de geocodificación: %v", lastErr)
+}
+
+func (c *NominatimClient) geocodeWithQuery(query string) (float64, float64, error) {
 	// 1. Check cache
 	c.mutex.RLock()
 	item, ok := c.cache[query]
@@ -97,4 +130,13 @@ func (c *NominatimClient) Geocode(city, region, country string) (float64, float6
 	c.mutex.Unlock()
 
 	return lat, lng, nil
+}
+
+func cleanLoc(s string) string {
+	s = strings.TrimSpace(s)
+	lower := strings.ToLower(s)
+	if lower == "" || lower == "s/d" || lower == "nan" || lower == "null" || lower == "none" || lower == "unknown" {
+		return ""
+	}
+	return s
 }

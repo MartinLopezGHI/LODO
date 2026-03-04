@@ -8,7 +8,7 @@ INSERT INTO taxonomies (category, value, label, sort_order) VALUES
 ('vertical', 'foodtech', 'FoodTech', 30),
 ('vertical', 'climatech', 'ClimaTech', 40),
 ('vertical', 'circular_economy', 'Economía Circular', 50),
-('vertical', 'otra', 'OTRA', 60),
+('vertical', 'otra', 'Otra', 60),
 
 -- 2. SUB-VERTICALES (Ahora en minúsculas para coincidir con el Frontend)
 ('subvertical', 'digital_ag', 'Agricultura Digital / Software Agrícola', 101),
