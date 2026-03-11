@@ -12,6 +12,13 @@ const (
 	StatusArchived  OrganizationStatus = "ARCHIVED"
 )
 
+// Location representa la ubicación geográfica de una organización.
+type Location struct {
+	Country string  `json:"country"`
+	Region  *string `json:"region,omitempty"`
+	City    *string `json:"city,omitempty"`
+}
+
 // Organization es la entidad principal con la estructura corporativa completa.
 type Organization struct {
 	ID               string             `json:"id"`
@@ -19,9 +26,7 @@ type Organization struct {
 	Website          *string            `json:"website,omitempty"`
 	Vertical         *string            `json:"vertical,omitempty"` // Opcional
 	SubVertical      *string            `json:"subVertical,omitempty"`
-	Country          string             `json:"country"`
-	Region           string             `json:"region"`
-	City             string             `json:"city"`
+	Location         Location           `json:"location"`
 	LogoURL          *string            `json:"logoUrl,omitempty"`
 	EstadioActual    *string            `json:"estadioActual,omitempty"`
 	Solucion         *string            `json:"solucion,omitempty"`

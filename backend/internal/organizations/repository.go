@@ -17,27 +17,57 @@ func NewRepository(db *sql.DB) *Repository {
 
 // orgSelectColumns refleja la estructura exacta de la nueva tabla corporativa
 const orgSelectColumns = `
-	id, name, website, vertical, sub_vertical, country, region, city,
+	id, name, website, vertical, sub_vertical, location,
 	logo_url, estadio_actual, solucion, mail, social_media, contact_phone,
 	founders, founded, organization_type, outcome_status, business_model, badges,
 	notes, status, lat, lng, created_at, updated_at
 `
 
 // --- MÉTODOS DE PERSISTENCIA CORE ---
-
 func (r *Repository) Create(org *Organization) error {
-	_, err := r.DB.Exec(`
-		INSERT INTO organizations (
-			id, name, website, vertical, sub_vertical, country, region, city,
-			logo_url, estadio_actual, solucion, mail, social_media, contact_phone,
-			founders, founded, organization_type, outcome_status, business_model, badges,
-			notes, status, lat, lng
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		org.ID, org.Name, org.Website, org.Vertical, org.SubVertical,
-		org.Country, org.Region, org.City, org.LogoURL, org.EstadioActual,
-		org.Solucion, org.Mail, toJSON(org.SocialMedia), org.ContactPhone,
-		toJSON(org.Founders), org.Founded, org.OrganizationType, org.OutcomeStatus,
-		org.BusinessModel, toJSON(org.Badges), org.Notes, org.Status, org.Lat, org.Lng,
+	// Aseguramos status
+	if org.Status == "" {
+		org.Status = "DRAFT"
+	}
+
+	// Helpers para JSON (usamos punteros para que toJSON maneje nil correctamente)
+	locJSON := toJSON(org.Location)
+	socialJSON := toJSON(org.SocialMedia)
+	foundersJSON := toJSON(org.Founders)
+	badgesJSON := toJSON(org.Badges)
+
+	// El query tiene 22 columnas y ahora tendrá exactamente 22 signos '?'
+	query := `
+        INSERT INTO organizations (
+            id, name, website, vertical, sub_vertical, location,
+            logo_url, estadio_actual, solucion, mail, social_media, contact_phone,
+            founders, founded, organization_type, outcome_status, business_model, badges,
+            notes, status, lat, lng
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+	_, err := r.DB.Exec(query,
+		org.ID,
+		org.Name,
+		org.Website,
+		org.Vertical,
+		org.SubVertical,
+		locJSON,
+		org.LogoURL,
+		org.EstadioActual,
+		org.Solucion,
+		org.Mail,
+		socialJSON,
+		org.ContactPhone,
+		foundersJSON,
+		org.Founded,
+		org.OrganizationType,
+		org.OutcomeStatus,
+		org.BusinessModel,
+		badgesJSON,
+		org.Notes,
+		org.Status,
+		org.Lat,
+		org.Lng,
 	)
 	return err
 }
@@ -46,7 +76,7 @@ func (r *Repository) Update(org *Organization) error {
 	_, err := r.DB.Exec(`
 		UPDATE organizations SET 
 			name = ?, website = ?, vertical = ?, sub_vertical = ?, 
-			country = ?, region = ?, city = ?, logo_url = ?, 
+			location = ?, logo_url = ?, 
 			estadio_actual = ?, solucion = ?, mail = ?, social_media = ?, 
 			contact_phone = ?, founders = ?, founded = ?, 
 			organization_type = ?, outcome_status = ?, business_model = ?, 
@@ -54,7 +84,7 @@ func (r *Repository) Update(org *Organization) error {
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?`,
 		org.Name, org.Website, org.Vertical, org.SubVertical,
-		org.Country, org.Region, org.City, org.LogoURL,
+		toJSON(org.Location), org.LogoURL,
 		org.EstadioActual, org.Solucion, org.Mail, toJSON(org.SocialMedia),
 		org.ContactPhone, toJSON(org.Founders), org.Founded,
 		org.OrganizationType, org.OutcomeStatus, org.BusinessModel,
@@ -143,14 +173,14 @@ func (r *Repository) GetAggregates(params map[string]string) (*AggregatesRespons
 	resp := &AggregatesResponse{}
 	var err error
 
-	resp.Countries, err = r.fetchAggregation("country", false, whereSQL, args)
+	resp.Countries, err = r.fetchAggregation("JSON_UNQUOTE(JSON_EXTRACT(location,'$.country'))", false, whereSQL, args)
 	resp.Verticals, err = r.fetchAggregation("vertical", false, whereSQL, args)
 	resp.SubVerticals, err = r.fetchAggregation("sub_vertical", true, whereSQL, args)
 	resp.OrganizationTypes, err = r.fetchAggregation("organization_type", false, whereSQL, args)
 	resp.Estadios, err = r.fetchAggregation("estadio_actual", true, whereSQL, args)
 	resp.OutcomeStatuses, err = r.fetchAggregation("outcome_status", false, whereSQL, args)
-	resp.Regions, err = r.fetchAggregation("region", true, whereSQL, args)
-	resp.Cities, err = r.fetchAggregation("city", true, whereSQL, args)
+	resp.Regions, err = r.fetchAggregation("JSON_UNQUOTE(JSON_EXTRACT(location,'$.region'))", true, whereSQL, args)
+	resp.Cities, err = r.fetchAggregation("JSON_UNQUOTE(JSON_EXTRACT(location,'$.city'))", true, whereSQL, args)
 
 	if err != nil {
 		return nil, err
@@ -162,11 +192,11 @@ func (r *Repository) GetAggregates(params map[string]string) (*AggregatesRespons
 
 func (r *Repository) scanOrg(scanner interface{ Scan(dest ...any) error }) (*Organization, error) {
 	var org Organization
-	var socialJ, foundersJ, badgesJ *string
+	var locationJ, socialJ, foundersJ, badgesJ *string
 
 	err := scanner.Scan(
-		&org.ID, &org.Name, &org.Website, &org.Vertical, &org.SubVertical,
-		&org.Country, &org.Region, &org.City, &org.LogoURL, &org.EstadioActual,
+		&org.ID, &org.Name, &org.Website, &org.Vertical, &org.SubVertical, &locationJ,
+		&org.LogoURL, &org.EstadioActual,
 		&org.Solucion, &org.Mail, &socialJ, &org.ContactPhone, &foundersJ,
 		&org.Founded, &org.OrganizationType, &org.OutcomeStatus, &org.BusinessModel,
 		&badgesJ, &org.Notes, &org.Status, &org.Lat, &org.Lng, &org.CreatedAt, &org.UpdatedAt,
@@ -175,6 +205,7 @@ func (r *Repository) scanOrg(scanner interface{ Scan(dest ...any) error }) (*Org
 		return nil, err
 	}
 
+	fromJSON(locationJ, &org.Location)
 	fromJSON(socialJ, &org.SocialMedia)
 	fromJSON(foundersJ, &org.Founders)
 	fromJSON(badgesJ, &org.Badges)
@@ -195,7 +226,7 @@ func (r *Repository) buildWhereClause(params map[string]string) (string, []inter
 		args = append(args, vertical)
 	}
 	if country := params["country"]; country != "" {
-		query += " AND country = ?"
+		query += " AND JSON_UNQUOTE(JSON_EXTRACT(location,'$.country')) = ?"
 		args = append(args, country)
 	}
 	if estadio := params["estadioActual"]; estadio != "" {
@@ -203,15 +234,15 @@ func (r *Repository) buildWhereClause(params map[string]string) (string, []inter
 		args = append(args, estadio)
 	}
 	if region := params["region"]; region != "" {
-		query += " AND region = ?"
+		query += " AND JSON_UNQUOTE(JSON_EXTRACT(location,'$.region')) = ?"
 		args = append(args, region)
 	}
 	if city := params["city"]; city != "" {
-		query += " AND city = ?"
+		query += " AND JSON_UNQUOTE(JSON_EXTRACT(location,'$.city')) = ?"
 		args = append(args, city)
 	}
 	if q := params["q"]; q != "" {
-		query += " AND (name LIKE ? OR solucion LIKE ? OR city LIKE ? OR country LIKE ?)"
+		query += " AND (name LIKE ? OR solucion LIKE ? OR JSON_UNQUOTE(JSON_EXTRACT(location,'$.city')) LIKE ? OR JSON_UNQUOTE(JSON_EXTRACT(location,'$.country')) LIKE ?)"
 		like := "%" + q + "%"
 		args = append(args, like, like, like, like)
 	}

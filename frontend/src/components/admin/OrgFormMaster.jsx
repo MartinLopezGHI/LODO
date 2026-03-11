@@ -26,9 +26,11 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
         name: '',
         vertical: '',
         subVertical: '',
-        country: '',
-        region: '',
-        city: '',
+        location: {
+            country: '',
+            region: '',
+            city: ''
+        },
         estadioActual: '',
         solucion: '',
         mail: '',
@@ -126,9 +128,11 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
                             solucion: fullOrg.solucion || fullOrg.Solucion || prev.solucion,
                             mail: fullOrg.mail || fullOrg.Mail || prev.mail,
                             website: fullOrg.website || fullOrg.Website || prev.website,
-                            country: fullOrg.country || fullOrg.Country || prev.country,
-                            region: fullOrg.region || fullOrg.Region || prev.region,
-                            city: fullOrg.city || fullOrg.City || prev.city,
+                            location: fullOrg.location || {
+                                country: fullOrg.country || fullOrg.Country || '',
+                                region: fullOrg.region || fullOrg.Region || '',
+                                city: fullOrg.city || fullOrg.City || ''
+                            },
 
                             socialMedia: fullOrg.socialMedia || fullOrg.social_media || prev.socialMedia || {},
                             founders: fullOrg.founders || fullOrg.Founders || prev.founders || [],
@@ -160,7 +164,15 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
+        if (name.startsWith('location.')) {
+            const field = name.split('.')[1];
+            setForm(prev => ({
+                ...prev,
+                location: { ...prev.location, [field]: value }
+            }));
+        } else {
+            setForm(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSelect = (name, value) => {
@@ -232,7 +244,7 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
 
         // Validación manual de campos obligatorios: Solo Nombre, País y Sitio Web
         if (!form.name?.trim()) { toast.error("El nombre es obligatorio"); setLoading(false); return; }
-        if (!form.country?.trim()) { toast.error("El país es obligatorio"); setLoading(false); return; }
+        if (!form.location?.country?.trim()) { toast.error("El país es obligatorio"); setLoading(false); return; }
         if (!form.website?.trim()) { toast.error("El sitio web es obligatorio"); setLoading(false); return; }
 
         // Convertir array de UI de vuelta al mapa (objeto) esperado por Backend
@@ -260,9 +272,11 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
             contactPhone: form.contactPhone,
             website: form.website,
             logoUrl: form.logoUrl,
-            country: form.country,
-            region: form.region,
-            city: form.city,
+            location: {
+                country: form.location.country,
+                region: form.location.region || null,
+                city: form.location.city || null
+            },
             notes: form.notes,
             founded: form.founded ? parseInt(form.founded) : null,
             socialMedia: socialMediaMap,
@@ -583,13 +597,21 @@ export default function OrgFormMaster({ isOpen, onClose, onCreated, editingOrg }
 
                         <Separator className="bg-white/5" />
 
-                        {/* SECCIÓN 4: UBICACIÓN (ID y Geo son automáticos) */}
                         <section className="space-y-4">
                             <h3 className="text-xs font-bold uppercase tracking-widest text-[#6FE844]">Geografía</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <Input name="country" value={form.country} onChange={handleChange} required placeholder="País" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
-                                <Input name="region" value={form.region} onChange={handleChange} placeholder="Provincia" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
-                                <Input name="city" value={form.city} onChange={handleChange} placeholder="Ciudad" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] uppercase opacity-50 px-1">País *</Label>
+                                    <Input name="location.country" value={form.location.country} onChange={handleChange} required placeholder="País" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
+                                </div>
+                                <div className={`space-y-1 transition-all duration-300 ${!form.location.country ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                    <Label className="text-[10px] uppercase opacity-50 px-1">Región / Provincia</Label>
+                                    <Input name="location.region" value={form.location.region} onChange={handleChange} placeholder="Región" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
+                                </div>
+                                <div className={`space-y-1 transition-all duration-300 ${!form.location.region ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                    <Label className="text-[10px] uppercase opacity-50 px-1">Ciudad</Label>
+                                    <Input name="location.city" value={form.location.city} onChange={handleChange} placeholder="Ciudad" className="bg-white border-gray-200 text-[#59595B] h-11 focus:border-[#6FE844]/50 rounded-xl" />
+                                </div>
                             </div>
                         </section>
 

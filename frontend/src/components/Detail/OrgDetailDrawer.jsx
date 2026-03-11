@@ -107,9 +107,11 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                         </Badge>
                                     </div>
                                     <DialogTitle className="text-3xl font-black tracking-tighter leading-none" style={{ color: lodoDark }}>{org.name}</DialogTitle>
-                                    <DialogDescription className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-60 mt-3" style={{ color: lodoDark }}>
+                                    <DialogDescription className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest mt-3" style={{ color: lodoDark }}>
                                         <MapPin className="h-3.5 w-3.5" style={{ color: lodoGreen }} />
-                                        {org.country}{org.region ? `, ${formatLabel(org.region)}` : ''}{org.city ? ` · ${formatLabel(org.city)}` : ''}
+                                        {org.location?.country || org.country}
+                                        {(org.location?.region || org.region) ? `, ${formatLabel(org.location?.region || org.region)}` : ''}
+                                        {(org.location?.city || org.city) ? ` · ${formatLabel(org.location?.city || org.city)}` : ''}
                                     </DialogDescription>
                                 </div>
                             </div>
@@ -186,8 +188,8 @@ export default function OrgDetailDrawer({ orgId, onClose }) {
                                                     <MapPin className="h-5 w-5" style={{ color: lodoGreen }} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-black text-xl tracking-tighter" style={{ color: lodoDark }}>{org.city || 'Ubicación'}</h4>
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 mt-0.5" style={{ color: lodoDark }}>{org.region ? `${formatLabel(org.region)}, ` : ''}{org.country}</p>
+                                                    <h4 className="font-black text-xl tracking-tighter" style={{ color: lodoDark }}>{(org.location?.city || org.city) || 'Ubicación'}</h4>
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40 mt-0.5" style={{ color: lodoDark }}>{(org.location?.region || org.region) ? `${formatLabel(org.location?.region || org.region)}, ` : ''}{org.location?.country || org.country}</p>
                                                 </div>
                                             </div>
                                             {org.lat && org.lng && (
