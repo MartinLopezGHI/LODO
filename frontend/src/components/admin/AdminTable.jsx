@@ -254,7 +254,7 @@ export default function AdminTable({ organizations, onRefresh, onSelect }) {
                                                     <div className="flex flex-col">
                                                         <span className="text-sm font-bold truncate max-w-[180px]" style={{ color: lodoDark }}>{org.name || "S/N"}</span>
                                                         <span className="text-[10px] text-muted-foreground md:hidden truncate">
-                                                            {org.city || 'S/D'}, {org.country || 'S/D'}
+                                                            {org.location?.city || org.city || 'S/D'}, {org.location?.country || org.country || 'S/D'}
                                                         </span>
                                                     </div>
                                                 </TableCell>
@@ -262,7 +262,7 @@ export default function AdminTable({ organizations, onRefresh, onSelect }) {
                                                     <div className="flex flex-col gap-0.5">
                                                         <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
                                                             <MapPin className="h-3 w-3" style={{ color: lodoGreen }} />
-                                                            {org.city || 'S/D'}, {org.country || 'S/D'}
+                                                            {org.location?.city || org.city || 'S/D'}, {org.location?.country || org.country || 'S/D'}
                                                         </div>
                                                         <code className="text-[9px] opacity-40 font-mono tracking-tighter">{org.id}</code>
                                                     </div>

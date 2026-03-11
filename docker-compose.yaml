@@ -2,35 +2,51 @@ services:
   db:
     image: mariadb:10.11
     container_name: lodo-db-local
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: lodo_db
-      MYSQL_USER: lodo_user
-      MYSQL_PASSWORD: lodo_password
+      MARIADB_ROOT_PASSWORD: root_password
+      MARIADB_DATABASE: lodo_db
+      MARIADB_USER: lodo_user
+      MARIADB_PASSWORD: lodo_password
     ports:
-      - "3307:3306" # Usamos 3307 local para no chocar con un MySQL que ya tengas
+      - "3310:3306" # Mapeamos el puerto 3310 de tu PC al 3306 del contenedor
+    volumes:
+      - lodo_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
     container_name: lodo-back-local
+    restart: always
     ports:
       - "8080:8080"
     environment:
       DB_USER: lodo_user
       DB_PASS: lodo_password
-      DB_HOST: db # Docker reconoce el nombre del servicio 'db'
+      DB_HOST: db
       DB_PORT: 3306
       DB_NAME: lodo_db
+      ADMIN_TOKEN: secret123
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build: 
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
-        VITE_API_URL: http://localhost:8080 # En local apunta al back local
+        VITE_API_URL: http://localhost:8080
     container_name: lodo-front-local
     ports:
       - "80:80"
     depends_on:
       - backend
+
+volumes:
+  lodo_db_data:

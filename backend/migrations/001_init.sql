@@ -4,9 +4,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     website VARCHAR(255) NULL,
     vertical VARCHAR(64) NOT NULL,       -- Antes sector_primary
     sub_vertical VARCHAR(64) NULL,      -- Antes sector_secondary
-    country VARCHAR(100) NOT NULL,
-    region VARCHAR(100) NOT NULL,
-    city VARCHAR(100) NOT NULL,
+    location JSON NOT NULL,             -- {country: "...", region: "...", city: "..."}
     logo_url VARCHAR(512) NULL,         -- URL de GCS
     estadio_actual VARCHAR(64) NULL,    -- Antes stage
     solucion TEXT NULL,                 -- Antes description
@@ -25,8 +23,13 @@ CREATE TABLE IF NOT EXISTS organizations (
     lng DECIMAL(10, 7) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
+    -- Columnas virtuales para indexar JSON correctamente en MariaDB
+    location_country VARCHAR(100) AS (JSON_UNQUOTE(JSON_EXTRACT(location,'$.country'))) STORED,
+    location_city VARCHAR(100) AS (JSON_UNQUOTE(JSON_EXTRACT(location,'$.city'))) STORED,
+
     -- Índices para velocidad de búsqueda
     INDEX idx_status_vertical (status, vertical),
-    INDEX idx_geo (country, region, city)
+    INDEX idx_geo_country (location_country),
+    INDEX idx_geo_city (location_city)
 );

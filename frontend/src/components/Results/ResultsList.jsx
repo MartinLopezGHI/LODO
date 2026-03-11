@@ -67,7 +67,10 @@ export default function ResultsList({ organizations, onSelect, loading, hideHead
 
                         <div className="flex items-center gap-2 text-[10px] mb-6 font-black uppercase tracking-widest opacity-60" style={{ color: '#59595B' }}>
                             <MapPin className="h-3.5 w-3.5" style={{ color: '#6FEA44' }} />
-                            <span>{org.country}{org.city ? ` · ${formatLabel(org.city)}` : ''}</span>
+                            <span>
+                                {org.location?.country || org.country}
+                                {(org.location?.city || org.city) ? ` · ${formatLabel(org.location?.city || org.city)}` : ''}
+                            </span>
                         </div>
 
                         <div className="flex flex-wrap gap-2">

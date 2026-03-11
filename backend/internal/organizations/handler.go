@@ -227,7 +227,16 @@ func (h *Handler) Geocode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lat, lng, err := h.Geocoder.Geocode(org.City, org.Region, org.Country)
+	city := ""
+	if org.Location.City != nil {
+		city = *org.Location.City
+	}
+	region := ""
+	if org.Location.Region != nil {
+		region = *org.Location.Region
+	}
+
+	lat, lng, err := h.Geocoder.Geocode(city, region, org.Location.Country)
 	if err != nil {
 		http.Error(w, "Geocoding error: "+err.Error(), http.StatusBadGateway)
 		return

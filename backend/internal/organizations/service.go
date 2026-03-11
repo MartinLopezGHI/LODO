@@ -57,8 +57,17 @@ func (s *Service) Create(org *Organization) error {
 		return err
 	}
 
-	if org.City != "" || org.Region != "" || org.Country != "" {
-		lat, lng, err := s.geocoder.Geocode(org.City, org.Region, org.Country)
+	if org.Location.Country != "" {
+		city := ""
+		if org.Location.City != nil {
+			city = *org.Location.City
+		}
+		region := ""
+		if org.Location.Region != nil {
+			region = *org.Location.Region
+		}
+
+		lat, lng, err := s.geocoder.Geocode(city, region, org.Location.Country)
 		if err == nil {
 			org.Lat = &lat
 			org.Lng = &lng
@@ -81,8 +90,39 @@ func (s *Service) Update(org *Organization) error {
 		return err
 	}
 
-	if org.City != existing.City || org.Region != existing.Region || org.Country != existing.Country {
-		lat, lng, err := s.geocoder.Geocode(org.City, org.Region, org.Country)
+	hasLocChanged := func(old, new Location) bool {
+		if old.Country != new.Country {
+			return true
+		}
+		oRegion, nRegion := "", ""
+		if old.Region != nil {
+			oRegion = *old.Region
+		}
+		if new.Region != nil {
+			nRegion = *new.Region
+		}
+		if oRegion != nRegion {
+			return true
+		}
+		oCity, nCity := "", ""
+		if old.City != nil {
+			oCity = *old.City
+		}
+		if new.City != nil {
+			nCity = *new.City
+		}
+		return oCity != nCity
+	}
+
+	if hasLocChanged(existing.Location, org.Location) {
+		city, region := "", ""
+		if org.Location.City != nil {
+			city = *org.Location.City
+		}
+		if org.Location.Region != nil {
+			region = *org.Location.Region
+		}
+		lat, lng, err := s.geocoder.Geocode(city, region, org.Location.Country)
 		if err == nil {
 			org.Lat = &lat
 			org.Lng = &lng

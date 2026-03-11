@@ -10,9 +10,13 @@ func Normalize(org *Organization) error {
 	// 1. Trim en campos de texto obligatorios y opcionales
 	org.ID = strings.TrimSpace(org.ID)
 	org.Name = strings.TrimSpace(org.Name)
-	org.Country = strings.TrimSpace(org.Country)
-	org.Region = strings.TrimSpace(org.Region)
-	org.City = strings.TrimSpace(org.City)
+	org.Location.Country = strings.TrimSpace(org.Location.Country)
+	if org.Location.Region != nil {
+		*org.Location.Region = strings.TrimSpace(*org.Location.Region)
+	}
+	if org.Location.City != nil {
+		*org.Location.City = strings.TrimSpace(*org.Location.City)
+	}
 
 	// 2. Validación de campos mínimos indispensables para existir en la DB
 	if org.Name == "" {
@@ -68,7 +72,7 @@ func ValidateForPublish(org *Organization) error {
 	if org.Name == "" {
 		return fmt.Errorf("el nombre de la organización es obligatorio para publicar")
 	}
-	if org.Country == "" {
+	if org.Location.Country == "" {
 		return fmt.Errorf("el país es obligatorio para publicar")
 	}
 	if org.Website == nil || *org.Website == "" {

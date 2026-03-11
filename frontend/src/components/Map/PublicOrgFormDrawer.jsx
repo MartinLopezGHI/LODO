@@ -63,7 +63,7 @@ DATOS DE LA EMPRESA:
 Nombre: ${form.name}
 Vertical: ${form.vertical}
 Solución: ${form.solucion}
-Ubicación: ${form.city}, ${form.region}, ${form.country}
+Ubicación: ${form.city || 'N/A'}, ${form.region || 'N/A'}, ${form.country}
 Website: ${form.website}
 --------------------------------------`;
 
@@ -134,9 +134,15 @@ Website: ${form.website}
                     <div className="p-4 rounded-xl space-y-3" style={{ backgroundColor: `${lodoGreen}08`, border: `1px solid ${lodoGreen}20` }}>
                         <Label className="text-[10px] font-black uppercase tracking-widest" style={{ color: lodoGreen }}>Localización</Label>
                         <div className="grid grid-cols-3 gap-2">
-                            <Input name="country" placeholder="País" value={form.country} onChange={handleChange} required className="h-9 text-xs bg-white border-gray-200" />
-                            <Input name="region" placeholder="Prov." value={form.region} onChange={handleChange} required className="h-9 text-xs bg-white border-gray-200" />
-                            <Input name="city" placeholder="Ciudad" value={form.city} onChange={handleChange} required className="h-9 text-xs bg-white border-gray-200" />
+                            <div className="space-y-1">
+                                <Input name="country" placeholder="País *" value={form.country} onChange={handleChange} required className="h-9 text-xs bg-white border-gray-200" />
+                            </div>
+                            <div className={`space-y-1 transition-all duration-300 ${!form.country ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                <Input name="region" placeholder="Prov." value={form.region} onChange={handleChange} className="h-9 text-xs bg-white border-gray-200" />
+                            </div>
+                            <div className={`space-y-1 transition-all duration-300 ${!form.region ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                <Input name="city" placeholder="Ciudad" value={form.city} onChange={handleChange} className="h-9 text-xs bg-white border-gray-200" />
+                            </div>
                         </div>
                     </div>
 
