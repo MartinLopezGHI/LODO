@@ -79,15 +79,16 @@ const MapEngine = ({ organizations, viewMode }) => {
             // MODO CALOR EN VERDE LODO
             const heatData = organizations
                 .filter(o => o.lat && o.lng)
-                .map(o => [o.lat, o.lng, 2.5]); // Intensidad intermedia (entre 1.5 y 5.0)
+                .map(o => [o.lat, o.lng, 1.1]); // Peso mayor para mayor visibilidad general
 
             layerRef.current = L.heatLayer(heatData, {
-                radius: 35,      // Tamaño intermedio
+                radius: 35,      // Radio mayor para un "brillo" más notable
                 blur: 20,
+                max: 2.5,        // Saturación más rápida para que 100 startups se vean intensas
                 gradient: {
-                    0.2: '#6FEA44', // Verde LODO base (más área con este color)
-                    0.6: '#4ade23', // Verde un poco más fuerte
-                    1.0: '#23a100'  // Verde bastante fuerte, pero no negro/musgo como la 1ra vez
+                    0.2: '#6FEA44', // Verde LODO base
+                    0.6: '#4ade23', // Verde medio
+                    1.0: '#23a100'  // Verde máximo
                 }
             });
         }
@@ -102,12 +103,51 @@ const MapEngine = ({ organizations, viewMode }) => {
     return null;
 };
 
+// Componente asistente para detectar el zoom y avisar al padre
+const ZoomHandler = ({ onZoomChange }) => {
+    const map = useMap();
+    useEffect(() => {
+        const handleZoom = () => onZoomChange(map.getZoom());
+        map.on('zoomend', handleZoom);
+        return () => map.off('zoomend', handleZoom);
+    }, [map, onZoomChange]);
+    return null;
+};
+
 export default function MapView({ organizations }) {
     const [viewMode, setViewMode] = useState('heat');
+    const [currentZoom, setCurrentZoom] = useState(2.5);
     const validOrgs = organizations || [];
+
+    // Estilo 1: Todo Limpio (Zoom inicial)
+    const styleClean = "s.t:0|s.e:g.f|p.c:%23ffffff,s.t:6|s.e:g.f|p.c:%23a8d1df,s.e:l|p.v:off,s.t:3|p.v:off";
+
+    // Estilo 2: Con Nombres (Zoom adentro)
+    // Nombres en negro (#000000), sin borde (p.v:off en stroke)
+    const styleWithLabels = "s.t:0|s.e:g.f|p.c:%23ffffff,s.t:6|s.e:g.f|p.c:%23a8d1df,s.e:l.t.f|p.c:%23000000,s.e:l.t.s|p.v:off,s.t:3|p.v:off";
 
     return (
         <div className="w-full h-full relative" style={{ minHeight: '600px', height: '100%' }}>
+
+            {/* TEXTURA DE PUNTOS (SOLO EN PAÍSES) */}
+            <style dangerouslySetInnerHTML={{__html: `
+                .pixel-points-overlay {
+                    position: absolute;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    z-index: 401;
+                    pointer-events: none;
+                    /* Puntos de color calculado para ser más brillantes que el mar 
+                       pero más oscuros que la tierra blanca. */
+                    background-image: radial-gradient(#e0e0e0 1px, transparent 0);
+                    background-size: 5px 5px;
+                    /* Darken comparará el color del mapa con el del punto y se quedará con el más oscuro.
+                       Como el mar celeste es más oscuro que el punto (#e0e0e0), el mar se queda como está.
+                       Como la tierra blanca es más clara que el punto, el punto gana y se dibuja sobre el blanco. */
+                    mix-blend-mode: darken;
+                }
+            `}} />
+
+            <div className="pixel-points-overlay" />
 
             {/* SWITCH ESTILO MANUAL DE MARCA */}
             <div className="absolute top-5 right-5 z-[1000] flex items-center bg-white/95 p-2 px-4 rounded-full shadow-2xl border border-[#B1B3B3] gap-3">
@@ -123,12 +163,24 @@ export default function MapView({ organizations }) {
             </div>
 
             <MapContainer
-                center={[-34.60, -58.38]}
-                zoom={4}
+                center={[20, 0]}
+                zoom={2.5}
+                minZoom={2.5}
+                zoomSnap={0.5}
+                maxBounds={[[-90, -180], [90, 180]]}
+                maxBoundsViscosity={1.0}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
             >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <ZoomHandler onZoomChange={setCurrentZoom} />
+
+                <TileLayer
+                    key={currentZoom > 3 ? 'labels' : 'clean'}
+                    url={`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=es&region=AR&apistyle=${currentZoom > 3 ? styleWithLabels : styleClean}`}
+                    noWrap={true}
+                    bounds={[[-90, -180], [90, 180]]}
+                    attribution="&copy; Google Maps"
+                />
 
                 <MapEngine organizations={validOrgs} viewMode={viewMode} />
 

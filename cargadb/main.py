@@ -1,95 +1,89 @@
 import subprocess
 import sys
 import os
+import logging
 
-# Configuración de rutas dinámicas absoluta
+# Configuración de Logging para trazabilidad profesional
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-REQUIREMENTS_PATH = os.path.join(BASE_DIR, "requirements.txt")
-SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, "config", "service_account.json")
 
-def verificar_configuracion():
-    if not os.path.exists(SERVICE_ACCOUNT_PATH):
-        print(f"Error: No se encontró el archivo de configuración en {SERVICE_ACCOUNT_PATH}")
-        print("Asegúrate de colocar tu 'service_account.json' en la carpeta 'config'.")
-        sys.exit(1)
+def check_environment():
+    """Verifica que los archivos esenciales existan antes de empezar."""
+    required_files = [
+        os.path.join(BASE_DIR, "config", "service_account.json"),
+        os.path.join(BASE_DIR, ".env")
+    ]
+    for file in required_files:
+        if not os.path.exists(file):
+            logging.error(f"Archivo crítico no encontrado: {file}")
+            sys.exit(1)
 
-def instalar_dependencias():
-    print(f"Verificando dependencias desde: {REQUIREMENTS_PATH}")
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", REQUIREMENTS_PATH])
-        print("Dependencias verificadas.\n")
-    except Exception as e:
-        print(f"Error al instalar dependencias: {e}")
-        sys.exit(1)
-
-def ejecutar_script(carpeta, nombre_script):
-    ruta_script = os.path.join(BASE_DIR, carpeta, nombre_script)
-    print(f"--- Ejecutando Fase: {carpeta}/{nombre_script} ---")
+def setup_virtual_environment():
+    """Verifica y configura un entorno virtual asegurándose de instalar las dependencias."""
+    venv_dir = os.path.join(BASE_DIR, ".venv")
+    requirements_file = os.path.join(BASE_DIR, "requirements.txt")
     
-    if not os.path.exists(ruta_script):
-        print(f"Error: No se encontró el archivo en {ruta_script}")
+    # Check if python is in Windows or Unix path inside the venv
+    if os.name == 'nt':
+        python_bin = os.path.join(venv_dir, "Scripts", "python.exe")
+        pip_bin = os.path.join(venv_dir, "Scripts", "pip.exe")
+    else:
+        python_bin = os.path.join(venv_dir, "bin", "python")
+        pip_bin = os.path.join(venv_dir, "bin", "pip")
+
+    if not os.path.exists(venv_dir):
+        logging.info("Entorno virtual no encontrado. Creando entorno virtual '.venv'...")
+        subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True, cwd=BASE_DIR)
+        
+        logging.info("Instalando dependencias desde requirements.txt...")
+        subprocess.run([pip_bin, "install", "-r", requirements_file], check=True, cwd=BASE_DIR)
+        logging.info("Entorno virtual configurado exitosamente.")
+    else:
+        logging.info("Entorno virtual '.venv' detectado.")
+
+    return python_bin
+
+def run_step(python_bin, script_name):
+    """Ejecuta un script de la carpeta scripts y maneja errores usando el binario de Python especificado."""
+    path = os.path.join(BASE_DIR, "scripts", script_name)
+    logging.info(f"Iniciando fase: {script_name}")
+    
+    if not os.path.exists(path):
+        logging.error(f"No se encontró el script: {path}")
         sys.exit(1)
         
     try:
-        # Ejecutamos el script asegurando el CWD correcto
-        subprocess.run([sys.executable, ruta_script], check=True, cwd=BASE_DIR)
-    except subprocess.CalledProcessError as e:
-        print(f"Error al ejecutar {nombre_script}: {e}")
+        # Usamos el python_bin del entorno virtual
+        result = subprocess.run([python_bin, path], check=True, cwd=BASE_DIR)
+        logging.info(f"Fase {script_name} completada con éxito.\n")
+    except subprocess.CalledProcessError:
+        logging.error(f"Falla crítica en la fase: {script_name}. Abortando.")
         sys.exit(1)
 
-def ejecutar_notebook():
-    ruta_nb = os.path.join(BASE_DIR, "notebooks", "01_limpieza_datos.ipynb")
-    # Generamos un nombre temporal para la ejecución
-    ruta_ejecucion = os.path.join(BASE_DIR, "notebooks", "tmp_ejecucion.ipynb")
-    print(f"--- Ejecutando Notebook: 01_limpieza_datos.ipynb ---")
+def main():
+    logging.info("=== SISTEMA DE CARGA MASIVA DE STARTUPS INICIADO ===")
     
-    try:
-        comando = [
-            sys.executable, "-m", "jupyter", "nbconvert", 
-            "--to", "notebook", 
-            "--execute", ruta_nb,
-            "--output", ruta_ejecucion,
-            "--ExecutePreprocessor.timeout=600"
-        ]
-        subprocess.run(comando, check=True, cwd=BASE_DIR)
-        print("Notebook ejecutado y procesado correctamente.\n")
-        
-        # Limpieza del archivo temporal generado por nbconvert
-        # En Windows a veces el proceso tarda en soltar el archivo
-        import time
-        intentos = 3
-        while intentos > 0:
-            try:
-                if os.path.exists(ruta_ejecucion):
-                    os.remove(ruta_ejecucion)
-                break
-            except PermissionError:
-                time.sleep(1)
-                intentos -= 1
-    except subprocess.CalledProcessError as e:
-        print(f"Error al ejecutar el notebook: {e}")
-        sys.exit(1)
+    # 1. Validación de entorno
+    check_environment()
+    
+    # 2. Configuración de Entorno Virtual
+    python_bin = setup_virtual_environment()
+    
+    # 3. Extracción (Antiguo descargador)
+    run_step(python_bin, "extractor.py")
+    
+    # 4. Transformación (Aquí llamaremos a tu lógica de limpieza)
+    run_step(python_bin, "transformer.py")
+    
+    # 5. Carga (Antiguo migrador)
+    run_step(python_bin, "loader.py")
+    
+    logging.info("=== PROCESO ETL FINALIZADO EXITOSAMENTE ===")
 
 if __name__ == "__main__":
-    print("========================================")
-    print("   INICIANDO ORQUESTADOR CARGADB ")
-    print("========================================\n")
-    
-    # 0. Verificación inicial
-    verificar_configuracion()
-    
-    # 1. Instalación de librerías
-    instalar_dependencias()
-    
-    # 2. Fase 1: Descarga
-    ejecutar_script("scripts", "00_descargador.py")
-    
-    # 3. Fase 2: Limpieza (Notebook)
-    ejecutar_notebook()
-    
-    # 4. Fase 3: Migración
-    ejecutar_script("scripts", "01_migrador_db.py")
-    
-    print("\n========================================")
-    print("   PROCESO FINALIZADO EXITOSAMENTE ")
-    print("========================================")
+    main()
