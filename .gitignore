@@ -55,12 +55,13 @@ yarn-error.log*
 cargadb/excels/1_sucios/*
 cargadb/excels/2_limpios/*
 cargadb/excels/3_usados/*
+cargadb/config/*
 analysis_scripts/
 
 # Permitir que Git rastree las carpetas aunque estén vacías usando .gitkeep
 !cargadb/excels/1_sucios/.gitkeep
 !cargadb/excels/2_limpios/.gitkeep
-!cargadb/excels/3_usados/.gitkeep
+!cargadb/config/.gitkeep
 
 # --- Docker ---
 .docker/

@@ -13,3 +13,6 @@ openpyxl
 # Orquestación de Notebooks
 nbconvert
 ipykernel
+
+# Otros
+geopy
